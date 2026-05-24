@@ -4,15 +4,24 @@ import { createEngine } from "./engine/factory.js";
 import { SessionRegistry } from "./session/SessionRegistry.js";
 import { browserClickTool } from "./tools/atomic/browser_click.js";
 import { browserCloseTool } from "./tools/atomic/browser_close.js";
+import { browserKeyTool } from "./tools/atomic/browser_key.js";
+import { browserNavigateTool } from "./tools/atomic/browser_navigate.js";
 import { browserOpenTool } from "./tools/atomic/browser_open.js";
+import { browserScreenshotTool } from "./tools/atomic/browser_screenshot.js";
+import { browserScrollTool } from "./tools/atomic/browser_scroll.js";
 import { browserSnapshotTool } from "./tools/atomic/browser_snapshot.js";
 import { browserTypeTool } from "./tools/atomic/browser_type.js";
+import { browserWaitForTool } from "./tools/atomic/browser_wait_for.js";
+import { auditA11yTool } from "./tools/composite/audit_a11y.js";
+import { extractUiStateTool } from "./tools/composite/extract_ui_state.js";
+import { scaffoldE2eTool } from "./tools/composite/scaffold_e2e.js";
 import { verifyUiFlowTool } from "./tools/composite/verify_ui_flow.js";
+import { visualDiffTool } from "./tools/composite/visual_diff.js";
 import type { ToolContext } from "./tools/types.js";
 import { log } from "./util/log.js";
 
 export const SERVER_NAME = "rolepod-mcp";
-export const SERVER_VERSION = "0.1.0";
+export const SERVER_VERSION = "0.2.0";
 
 export type ServerHandle = {
   mcp: McpServer;
@@ -45,12 +54,23 @@ export function buildServer(
   });
 
   const tools = [
+    // atomic
     browserOpenTool,
     browserCloseTool,
     browserSnapshotTool,
     browserClickTool,
     browserTypeTool,
+    browserKeyTool,
+    browserScrollTool,
+    browserWaitForTool,
+    browserScreenshotTool,
+    browserNavigateTool,
+    // composite
     verifyUiFlowTool,
+    auditA11yTool,
+    visualDiffTool,
+    scaffoldE2eTool,
+    extractUiStateTool,
   ] as const;
 
   for (const t of tools) {

@@ -244,6 +244,26 @@ export class PlaywrightEngine implements Engine {
     this.invalidateRefs(s);
   }
 
+  /**
+   * Composite-only escape hatch — exposes the raw Playwright Page so a
+   * composite tool that genuinely needs page-level APIs (axe-core,
+   * `getByText`, etc.) can use them without bloating the Engine interface
+   * with web-specific verbs. Throws if the session is not web.
+   */
+  getPageForSession(sessionId: string): Page {
+    const s = this.requireSession(sessionId);
+    if (s.session.platform !== "web") {
+      throw new UnsupportedPlatformError(s.session.platform);
+    }
+    return s.session.page;
+  }
+
+  /** Increment generation; the next ref-using call will see them as stale. */
+  bumpGeneration(sessionId: string): void {
+    const s = this.requireSession(sessionId);
+    this.invalidateRefs(s);
+  }
+
   // -------------------------------------------------------------------------
   // Internal helpers
   // -------------------------------------------------------------------------

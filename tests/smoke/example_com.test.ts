@@ -92,6 +92,7 @@ describe("verify_ui_flow — composite", () => {
       ],
       capture: ["screenshot"],
       close_on_finish: true,
+      minimize: false,
     });
     expect(result.isError).not.toBe(true);
     const body = result.structuredContent as Record<string, unknown>;
@@ -111,24 +112,28 @@ describe("verify_ui_flow — composite", () => {
       expect: [{ kind: "text_visible", text: "this string does not appear" }],
       capture: ["screenshot"],
       close_on_finish: true,
+      minimize: false,
     });
     const body = result.structuredContent as Record<string, unknown>;
     expect(body.passed).toBe(false);
     expect(String(body.failure_reason)).toMatch(/this string does not appear/);
   });
 
-  it("rejects mode='reproduce' with not_implemented_in_v01", async () => {
+  it("mode='reproduce' minimize=false runs without minimization metadata", async () => {
     const handler = verifyUiFlowTool.build(ctx);
     const result = await handler({
       mode: "reproduce",
       open: { platform: "web", url: EXAMPLE_URL, headless: true },
       steps: [],
-      expect: [],
+      expect: [{ kind: "text_visible", text: "Example Domain" }],
       close_on_finish: true,
+      minimize: false,
     });
-    expect(result.isError).toBe(true);
+    expect(result.isError).not.toBe(true);
     const body = result.structuredContent as Record<string, unknown>;
-    expect(body.code).toBe("not_implemented_in_v01");
+    expect(body.mode).toBe("reproduce");
+    expect(body.passed).toBe(true);
+    expect(body.minimized).toBeUndefined();
   });
 });
 

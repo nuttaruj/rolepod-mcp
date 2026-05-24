@@ -12,6 +12,7 @@ export type ErrorCode =
   | "unsupported_platform"
   | "unsupported_engine"
   | "not_implemented_in_v01"
+  | "not_implemented_in_v02"
   | "invalid_input"
   | "engine_error";
 

@@ -24,10 +24,16 @@ can decide what to do next.
 - Doc, config, or build-tool changes with no behavior surface.
 - No dev server / target available — ask the user to spin one up first
   before invoking.
-- The user wants a bug **reproduction** with step minimization. That is
-  `mode: 'reproduce'`, which lands in **v0.2**. v0.1 supports
-  `mode: 'assert'` only.
 - iOS / Android targets — mobile ships in v0.3 (`platform: 'ios' | 'android'`).
+
+## Modes
+
+- `mode: 'assert'` (default) — the assertions describe what the **feature
+  should do**; pass = feature works.
+- `mode: 'reproduce'` — the assertions describe what the **bug looks like**;
+  pass = bug reproduces. When `minimize: true` (default) the tool then
+  removes steps one-by-one to find the shortest still-reproducing sequence
+  and writes a `replay-minimized.json` bundle next to `replay.json`.
 
 ## Inputs
 

@@ -1,7 +1,7 @@
 {
   "name": "rolepod-mcp",
-  "version": "0.1.0",
-  "description": "Multi-platform UI/mobile automation for AI agents — verify-ui skill + MCP server (v0.1 web only via Playwright).",
+  "version": "0.2.0",
+  "description": "Multi-platform UI/mobile automation for AI agents — 4 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e) + MCP server with 15 tools (v0.2 web only via Playwright).",
   "author": {
     "name": "nuttaruj",
     "url": "https://github.com/nuttaruj"

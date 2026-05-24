@@ -52,12 +52,23 @@ const names = (listResp.result?.tools ?? []).map((t) => t.name);
 console.log("[tools]", names.join(", "));
 
 const expected = [
+  // atomic (10)
   "rolepod_browser_open",
   "rolepod_browser_close",
   "rolepod_browser_snapshot",
   "rolepod_browser_click",
   "rolepod_browser_type",
+  "rolepod_browser_key",
+  "rolepod_browser_scroll",
+  "rolepod_browser_wait_for",
+  "rolepod_browser_screenshot",
+  "rolepod_browser_navigate",
+  // composite (5)
   "rolepod_verify_ui_flow",
+  "rolepod_audit_a11y",
+  "rolepod_visual_diff",
+  "rolepod_scaffold_e2e",
+  "rolepod_extract_ui_state",
 ];
 const missing = expected.filter((n) => !names.includes(n));
 if (missing.length) {

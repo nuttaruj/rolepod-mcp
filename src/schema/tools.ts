@@ -112,6 +112,44 @@ export const browserTypeShape = {
 export const browserTypeSchema = z.object(browserTypeShape);
 export type BrowserTypeInput = z.infer<typeof browserTypeSchema>;
 
+export const browserKeyShape = {
+  session_id: z.string().min(1),
+  key: z.string().min(1),
+} as const;
+export const browserKeySchema = z.object(browserKeyShape);
+export type BrowserKeyInput = z.infer<typeof browserKeySchema>;
+
+export const browserScrollShape = {
+  session_id: z.string().min(1),
+  direction: z.enum(["up", "down", "left", "right"]),
+  amount: z.number().int().positive().optional(),
+  ref: z.string().min(1).optional(),
+} as const;
+export const browserScrollSchema = z.object(browserScrollShape);
+export type BrowserScrollInput = z.infer<typeof browserScrollSchema>;
+
+export const browserWaitForShape = {
+  session_id: z.string().min(1),
+  condition: waitConditionSchema,
+  timeout_ms: z.number().int().positive().optional(),
+} as const;
+export const browserWaitForSchema = z.object(browserWaitForShape);
+export type BrowserWaitForInput = z.infer<typeof browserWaitForSchema>;
+
+export const browserScreenshotShape = {
+  session_id: z.string().min(1),
+  full_page: z.boolean().optional(),
+} as const;
+export const browserScreenshotSchema = z.object(browserScreenshotShape);
+export type BrowserScreenshotInput = z.infer<typeof browserScreenshotSchema>;
+
+export const browserNavigateShape = {
+  session_id: z.string().min(1),
+  url: z.string().url(),
+} as const;
+export const browserNavigateSchema = z.object(browserNavigateShape);
+export type BrowserNavigateInput = z.infer<typeof browserNavigateSchema>;
+
 // ---------------------------------------------------------------------------
 // Composite verify_ui_flow
 //
@@ -160,9 +198,91 @@ export const verifyUiFlowShape = {
   expect: z.array(verifyExpectSchema).default([]),
   capture: z.array(captureKindSchema).optional(),
   close_on_finish: z.boolean().default(true),
+  /**
+   * Only consulted when `mode='reproduce'`. When true (default) and the
+   * initial run reproduces the bug, the composite tries to remove each
+   * step in turn and re-runs to find a smaller reproducer.
+   */
+  minimize: z.boolean().default(true),
 } as const;
 export const verifyUiFlowSchema = z.object(verifyUiFlowShape);
 export type VerifyUiFlowInput = z.infer<typeof verifyUiFlowSchema>;
+
+// ---------------------------------------------------------------------------
+// audit_a11y
+// ---------------------------------------------------------------------------
+
+export const wcagLevelSchema = z.enum(["wcag-a", "wcag-aa", "wcag-aaa"]);
+export const a11ySeveritySchema = z.enum([
+  "critical",
+  "serious",
+  "moderate",
+  "minor",
+]);
+export const auditScopeSchema = z.union([
+  z.literal("page"),
+  z.object({ ref: z.string().min(1) }),
+]);
+
+export const auditA11yShape = {
+  open: browserOpenSchema,
+  level: wcagLevelSchema.default("wcag-aa"),
+  scope: auditScopeSchema.default("page"),
+  report_format: z.enum(["json", "markdown"]).default("json"),
+  close_on_finish: z.boolean().default(true),
+} as const;
+export const auditA11ySchema = z.object(auditA11yShape);
+export type AuditA11yInput = z.infer<typeof auditA11ySchema>;
+
+// ---------------------------------------------------------------------------
+// visual_diff
+// ---------------------------------------------------------------------------
+
+export const visualDiffShape = {
+  open: browserOpenSchema,
+  baseline_id: z.string().min(1),
+  viewport: viewportSchema.optional(),
+  threshold_pct: z.number().min(0).max(1).default(0.1),
+  close_on_finish: z.boolean().default(true),
+  /** Pixel sensitivity for pixelmatch (0 = strict, 1 = lax). Default 0.1. */
+  pixel_threshold: z.number().min(0).max(1).default(0.1),
+} as const;
+export const visualDiffSchema = z.object(visualDiffShape);
+export type VisualDiffInput = z.infer<typeof visualDiffSchema>;
+
+// ---------------------------------------------------------------------------
+// scaffold_e2e
+// ---------------------------------------------------------------------------
+
+export const e2eFrameworkSchema = z.enum([
+  "playwright-test",
+  "vitest+playwright",
+  "pytest+selenium",
+]);
+
+export const scaffoldE2eShape = {
+  framework: e2eFrameworkSchema,
+  scenario_nl: z.string().min(1),
+  url: z.string().url(),
+  recorded_bundle: z.string().min(1).optional(),
+  /** Override the generated test file name. */
+  filename: z.string().min(1).optional(),
+} as const;
+export const scaffoldE2eSchema = z.object(scaffoldE2eShape);
+export type ScaffoldE2eInput = z.infer<typeof scaffoldE2eSchema>;
+
+// ---------------------------------------------------------------------------
+// extract_ui_state — used internally by other shipped skills (not user-facing).
+// ---------------------------------------------------------------------------
+
+export const extractUiStateShape = {
+  session_id: z.string().min(1).optional(),
+  open: browserOpenSchema.optional(),
+  question_nl: z.string().min(1),
+  close_on_finish: z.boolean().default(false),
+} as const;
+export const extractUiStateSchema = z.object(extractUiStateShape);
+export type ExtractUiStateInput = z.infer<typeof extractUiStateSchema>;
 
 // ---------------------------------------------------------------------------
 // Tool name registry — single source of truth for tool naming.
@@ -175,7 +295,16 @@ export const ToolNames = {
   browserSnapshot: "rolepod_browser_snapshot",
   browserClick: "rolepod_browser_click",
   browserType: "rolepod_browser_type",
+  browserKey: "rolepod_browser_key",
+  browserScroll: "rolepod_browser_scroll",
+  browserWaitFor: "rolepod_browser_wait_for",
+  browserScreenshot: "rolepod_browser_screenshot",
+  browserNavigate: "rolepod_browser_navigate",
   verifyUiFlow: "rolepod_verify_ui_flow",
+  auditA11y: "rolepod_audit_a11y",
+  visualDiff: "rolepod_visual_diff",
+  scaffoldE2e: "rolepod_scaffold_e2e",
+  extractUiState: "rolepod_extract_ui_state",
 } as const;
 
 export type ToolName = (typeof ToolNames)[keyof typeof ToolNames];

@@ -51,10 +51,36 @@ export class ArtifactStore {
     return path;
   }
 
-  async writeReplayBundle(runDir: string, bundle: ReplayBundle): Promise<string> {
-    const path = resolve(runDir, "replay.json");
+  async writeReplayBundle(
+    runDir: string,
+    bundle: ReplayBundle,
+    name = "replay.json",
+  ): Promise<string> {
+    const path = resolve(runDir, name);
     await writeFile(path, JSON.stringify(bundle, null, 2), "utf8");
     return path;
+  }
+
+  async writeReport(runDir: string, name: string, body: string): Promise<string> {
+    const path = resolve(runDir, name);
+    await writeFile(path, body, "utf8");
+    return path;
+  }
+
+  async writeBytes(runDir: string, name: string, buf: Buffer): Promise<string> {
+    const path = resolve(runDir, name);
+    await writeFile(path, buf);
+    return path;
+  }
+
+  async ensureDir(absDir: string): Promise<string> {
+    await mkdir(absDir, { recursive: true });
+    return absDir;
+  }
+
+  /** Root for stored visual baselines: `./.rolepod-mcp/baselines/`. */
+  get baselineDir(): string {
+    return resolve(this.rootDir, "..", "baselines");
   }
 
   private timestampSlug(): string {
