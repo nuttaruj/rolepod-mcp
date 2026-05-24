@@ -49,6 +49,7 @@ export const verifyUiFlowTool: ToolModule<typeof verifyUiFlowShape> = {
         result.minimized = {
           original_step_count: args.steps.length,
           minimized_step_count: min.steps.length,
+          minimal_steps: min.steps,
           steps_removed: min.removed,
           replay_bundle: min.replayPath,
           attempts: min.attempts,

@@ -388,3 +388,30 @@ This convention is owned by rolepod-mcp but adoptable by anyone — independent 
 **Chosen.** 10 files, ~200–400 lines each, numbered, with an INDEX.
 
 **Why.** Easier to update incrementally. Future sessions can load only the sections they need (e.g. just `03-tool-surface.md` when working on a tool change). One giant doc would force a re-read for any change.
+
+---
+
+## D-027 — `browser_navigate` is its own atomic tool (atomic count: 10, not 8)
+
+**Context.** Brief D-008 fixed the atomic count at 8 but left `browser_navigate` "rolled into `browser_open` or available within snapshot — final shape TBD in PoC." During v0.2 implementation we hit the question concretely.
+
+**Options considered.**
+1. **No `browser_navigate` tool** — every URL change requires `browser_close` + `browser_open`.
+2. **`browser_open` accepts re-navigation** — calling `open` on an existing `session_id` re-uses the session and just navigates.
+3. **`browser_navigate(session_id, url)` as a distinct atomic.**
+
+**Chosen.** Option 3. The atomic count becomes 10 (was 8 in brief D-008, then 9 with snapshot counted).
+
+**Why.**
+- Tearing down a browser per URL hop is wasteful (login state, cookies, perf timing all reset). Option 1 forces this.
+- Overloading `browser_open` (Option 2) breaks the symmetry of `open ↔ close` and confuses the Lead: "did open return a fresh session or reuse mine?" The `Session` type has no field distinguishing reused vs. new.
+- A dedicated `browser_navigate` is the same verb the engine interface already exposes (`Engine.navigate(session, url)`); the atomic tool is a 1:1 wrapper, which is the rule for atomics in general.
+- The "TBD in PoC" clause in D-008 explicitly invites this decision.
+
+**Rejected because.** Option 1 produces ugly multi-call flows for every `/verify-ui` that touches more than one URL. Option 2 introduces stateful behavior on a tool whose name suggests "fresh open".
+
+**Trade-off.** Atomic count slips from 8 to 10. We accept it because the Lead's mental model stays cleaner (one verb per primitive). The brief's "8 atomic" header in `03-tool-surface.md` is now treated as a v0.1 design heuristic, not a hard upper bound.
+
+**Out of scope still:** `drag_and_drop`, `upload_file`, `execute_javascript`, `print_to_pdf`, `switch_tab` — still deferred per brief's "What this does *not* expose" list.
+
+**Impact on brief.** `03-tool-surface.md` header should be updated to "Atomic tools (10)" when next revised. `09-roadmap.md → v0.1` exit criteria are unaffected (it lists atomic primitives by *role*, not by count).

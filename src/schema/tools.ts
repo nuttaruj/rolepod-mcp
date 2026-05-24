@@ -153,10 +153,11 @@ export type BrowserNavigateInput = z.infer<typeof browserNavigateSchema>;
 // ---------------------------------------------------------------------------
 // Composite verify_ui_flow
 //
-// v0.1: only `mode: 'assert'` is implemented. `mode: 'reproduce'` (with
-// step minimization) is scheduled for v0.2 — the schema accepts the field
-// so callers can be forward-compatible, but the handler rejects anything
-// other than 'assert' for now.
+// Both `mode: 'assert'` and `mode: 'reproduce'` are implemented (D-025).
+// When mode='reproduce' && passed && minimize, the composite runs a
+// classic ddmin pass over `steps` and adds a `minimized` block to the
+// output carrying the surviving step list and a `replay-minimized.json`
+// artifact path.
 // ---------------------------------------------------------------------------
 
 export const verifyStepSchema = z.discriminatedUnion("kind", [
