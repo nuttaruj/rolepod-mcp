@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "rolepod-uiproof": {
+      "command": "npx",
+      "args": ["-y", "@rolepod/uiproof"],
+      "env": {}
+    }
+  }
+}
