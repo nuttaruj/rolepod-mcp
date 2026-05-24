@@ -32,13 +32,21 @@ export async function runDoctor(): Promise<number> {
   // Appium server reachable
   checks.push(await checkAppiumServer());
 
-  // Xcode (macOS only, for iOS testing)
+  // Xcode (macOS only, for iOS testing — roadmap v0.3)
   if (osPlatform() === "darwin") {
     checks.push(checkXcode());
   }
 
-  // Android SDK
+  // Android SDK (roadmap v0.3)
   checks.push(checkAndroidSdk());
+
+  // SeleniumEngine status — explicitly roadmap v0.4
+  checks.push({
+    name: "SeleniumEngine (roadmap v0.4)",
+    status: "warn",
+    detail:
+      "Not implemented — deferred to v0.4 (legacy Selenium grid support, opt-in via ROLEPOD_MCP_WEB_ENGINE=selenium).",
+  });
 
   // Artifact dir writable
   checks.push(checkArtifactDir());
@@ -74,16 +82,16 @@ async function checkWebdriverIO(): Promise<Check> {
   try {
     const url = await import.meta.resolve?.("webdriverio");
     return {
-      name: "webdriverio (mobile client)",
+      name: "webdriverio (mobile client, v0.3)",
       status: "ok",
       detail: url ?? "resolved",
     };
   } catch {
     return {
-      name: "webdriverio (mobile client)",
+      name: "webdriverio (mobile client, v0.3)",
       status: "warn",
       detail:
-        "Not installed — web-only mode is fine. For mobile: npm i webdriverio",
+        "Not installed — web works fine without it. Mobile is roadmap v0.3 (see brief/09-roadmap.md). For mobile: npm i webdriverio",
     };
   }
 }
@@ -99,15 +107,15 @@ async function checkAppiumServer(): Promise<Check> {
     const res = await fetch(url, { signal: ctrl.signal });
     clearTimeout(timeout);
     return {
-      name: "Appium server reachable",
+      name: "Appium server (roadmap v0.3)",
       status: res.ok ? "ok" : "warn",
       detail: `${url} → HTTP ${res.status}`,
     };
-  } catch (err) {
+  } catch {
     return {
-      name: "Appium server reachable",
+      name: "Appium server (roadmap v0.3)",
       status: "warn",
-      detail: `Not reachable at ${url} (mobile sessions will fail until appium is running)`,
+      detail: `Not reachable at ${url} — mobile sessions need a running Appium daemon. Web sessions are unaffected.`,
     };
   }
 }
@@ -115,12 +123,13 @@ async function checkAppiumServer(): Promise<Check> {
 function checkXcode(): Check {
   const path = "/Applications/Xcode.app";
   if (existsSync(path)) {
-    return { name: "Xcode (iOS)", status: "ok", detail: path };
+    return { name: "Xcode (iOS, roadmap v0.3)", status: "ok", detail: path };
   }
   return {
-    name: "Xcode (iOS)",
+    name: "Xcode (iOS, roadmap v0.3)",
     status: "warn",
-    detail: "Install Xcode via the App Store; required for iOS simulators",
+    detail:
+      "Install Xcode via the App Store; required for iOS simulators. Not needed for web targets.",
   };
 }
 
@@ -133,13 +142,14 @@ function checkAndroidSdk(): Check {
   ].filter((x): x is string => typeof x === "string");
   for (const path of candidates) {
     if (existsSync(path)) {
-      return { name: "Android SDK", status: "ok", detail: path };
+      return { name: "Android SDK (roadmap v0.3)", status: "ok", detail: path };
     }
   }
   return {
-    name: "Android SDK",
+    name: "Android SDK (roadmap v0.3)",
     status: "warn",
-    detail: "Set ANDROID_HOME — needed only for Android testing",
+    detail:
+      "Set ANDROID_HOME — needed only for Android testing. Not needed for web or iOS targets.",
   };
 }
 
