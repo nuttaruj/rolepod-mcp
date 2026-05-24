@@ -1,7 +1,7 @@
 {
   "name": "rolepod-mcp",
   "displayName": "Rolepod MCP",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Multi-platform UI / mobile automation MCP server + 4 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e) for AI coding agents. Web production-ready via Playwright; mobile (iOS/Android via Appium) scaffolded.",
   "author": {
     "name": "nuttaruj"

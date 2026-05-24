@@ -7,6 +7,40 @@ release.
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-05-24
+
+First **live mobile smoke** completed end-to-end against a real iOS
+Simulator (iPhone 17, iOS 26.5) via Appium 3.4.2 + xcuitest driver
+11.7.1. Settings.app session opened, snapshot parsed to 161-node
+A11yNode tree (`application > navigationbar "Settings" > ...`),
+session closed cleanly. Doctor reports green for every check that
+matters on this host.
+
+### Fixed
+
+- `parseXcuiTestTree` + `parseUiAutomator2Tree`: skip XML declaration
+  (`<?xml ... ?>`) and processing instructions when picking the first
+  tag. Previously the declaration leaked into the tree as a synthetic
+  `?xml` node (e1) alongside the real `AppiumAUT` wrapper.
+
+### Verified live
+
+- `AppiumEngine.open()` against `com.apple.Preferences` on iOS
+  Simulator
+- `AppiumEngine.snapshot()` → `parseXcuiTestTree()` → 161 typed nodes
+- `AppiumEngine.close()` clean teardown
+
+### Notes
+
+- WebDriverAgent first-build takes 3-5 min via xcodebuild; subsequent
+  sessions reuse the cached WDA (~5s startup).
+- Appium daemon must run with `DEVELOPER_DIR` pointed at the full
+  Xcode app (not `/Library/Developer/CommandLineTools`) so the
+  iphonesimulator SDK is locatable. `rolepod-mcp install:mobile`
+  documents this.
+- Android UIAutomator2 smoke still pending — same fix applies to the
+  uiautomator2 parser preemptively.
+
 ## [0.3.0] — 2026-05-24
 
 Mobile scaffolding + CLI + governance. Web surface unchanged. Mobile

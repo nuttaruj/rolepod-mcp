@@ -118,7 +118,10 @@ export function parseXcuiTestTree(xmlString: string): IosNormalizedSnapshot {
 
 function firstTagName(node: RawNode): string | null {
   for (const key of Object.keys(node)) {
-    if (key !== ":@") return key;
+    if (key === ":@") continue;
+    // skip XML declarations (`<?xml ... ?>`) and processing instructions
+    if (key.startsWith("?")) continue;
+    return key;
   }
   return null;
 }

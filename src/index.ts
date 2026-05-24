@@ -5,7 +5,8 @@ export type { ServerHandle } from "./server.js";
 export { ArtifactStore } from "./artifact/ArtifactStore.js";
 export { SessionRegistry } from "./session/SessionRegistry.js";
 export { PlaywrightEngine } from "./engine/PlaywrightEngine.js";
-export { createEngine } from "./engine/factory.js";
+export { AppiumEngine } from "./engine/AppiumEngine.js";
+export { createEngine, createWebEngine, createMobileEngine } from "./engine/factory.js";
 export type {
   Engine,
   Session,

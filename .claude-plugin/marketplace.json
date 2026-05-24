@@ -11,7 +11,7 @@
       "name": "rolepod-mcp",
       "source": "./",
       "description": "15 MCP tools (10 atomic browser/mobile primitives + 5 composite workflows) + 4 user-invocable skills. Web production-ready via Playwright; mobile (iOS/Android) via Appium scaffolded — see `rolepod-mcp doctor` for readiness.",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "author": {
         "name": "nuttaruj"
       },

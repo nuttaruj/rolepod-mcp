@@ -1,6 +1,6 @@
 {
   "name": "rolepod-mcp",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Multi-platform UI/mobile automation for AI agents — 4 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e) + MCP server with 15 tools. v0.3 adds AppiumEngine scaffolding for iOS/Android, scope={ref} audit, replay CLI, ddmin minimization, doctor + install:mobile.",
   "author": {
     "name": "nuttaruj",

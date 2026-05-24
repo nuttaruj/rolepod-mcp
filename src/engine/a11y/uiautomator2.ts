@@ -109,7 +109,10 @@ export function parseUiAutomator2Tree(xmlString: string): AndroidNormalizedSnaps
 
 function firstTagName(node: RawNode): string | null {
   for (const key of Object.keys(node)) {
-    if (key !== ":@") return key;
+    if (key === ":@") continue;
+    // skip XML declarations (`<?xml ... ?>`) and processing instructions
+    if (key.startsWith("?")) continue;
+    return key;
   }
   return null;
 }
