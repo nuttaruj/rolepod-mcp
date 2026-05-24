@@ -21,13 +21,7 @@
     "visual-regression"
   ],
   "skills": "./skills/",
-  "mcp_servers": {
-    "rolepod-uiproof": {
-      "command": "npx",
-      "args": ["-y", "@rolepod/uiproof"],
-      "env": {}
-    }
-  },
+  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "Rolepod UIProof",
     "shortDescription": "UI verification, a11y audits, visual diff, e2e scaffolding — for AI coding agents.",
