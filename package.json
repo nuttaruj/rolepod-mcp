@@ -37,9 +37,14 @@
     "dist/",
     "skills/",
     ".claude-plugin/",
+    ".cursor-plugin/",
+    ".codex-plugin/",
+    ".cursor/",
     "README.md",
     "LICENSE",
-    "THIRD_PARTY.md"
+    "THIRD_PARTY.md",
+    "UPSTREAM_TRACKING.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsup && npm run build:schemas",

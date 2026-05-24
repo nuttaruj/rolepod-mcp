@@ -1,0 +1,32 @@
+{
+  "name": "rolepod-mcp",
+  "owner": {
+    "name": "nuttaruj"
+  },
+  "metadata": {
+    "description": "Multi-platform UI / mobile automation MCP server + 4 shipped skills for AI coding agents.",
+    "version": "0.3.0"
+  },
+  "plugins": [
+    {
+      "name": "rolepod-mcp",
+      "source": ".",
+      "description": "15 MCP tools + 4 skills. Web (Playwright) production-ready; mobile (iOS/Android via Appium) scaffolded.",
+      "version": "0.3.0",
+      "author": {
+        "name": "nuttaruj"
+      },
+      "homepage": "https://github.com/nuttaruj/rolepod-mcp",
+      "repository": "https://github.com/nuttaruj/rolepod-mcp",
+      "license": "MIT",
+      "keywords": [
+        "mcp",
+        "ui-automation",
+        "playwright",
+        "appium",
+        "accessibility",
+        "ai-agents"
+      ]
+    }
+  ]
+}
