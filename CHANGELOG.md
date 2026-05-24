@@ -68,18 +68,32 @@ simulator and are gated by `npx rolepod-mcp doctor`.
 - `factory.ts` splits `createWebEngine` + `createMobileEngine`;
   `createEngine` is kept as a back-compat alias for v0.1 callers.
 
-### Not yet verified
+### Not yet verified — mapped to later milestones
 
-- **Real mobile runs** — code paths compile and the AT normalizers
-  unit-test cleanly, but smoke against a real iOS simulator /
-  Android emulator requires local infra (Xcode + Android SDK +
-  appium daemon). `rolepod-mcp doctor` reports readiness.
-- **Selenium engine** — deferred. v0.4 brief item, intentionally
-  skipped for this milestone because it requires a Selenium grid
-  to verify.
-- **npm publish** + **GitHub publish** — owner action.
-- **v1.0 adoption metrics** (1k downloads, 3+ external
-  contributors) — time + market dependent.
+- **Real iOS / Android device runs** — gated by local infra
+  (Xcode + Android SDK + Appium daemon). `npx rolepod-mcp doctor`
+  reports readiness. Code paths compile and AT normalizers are
+  tested against fixture XML only; full simulator smoke arrives
+  when the infra is present. Scope: still **v0.3** (mobile).
+- **SeleniumEngine** — deferred to **v0.4** (legacy Selenium grid
+  support, opt-in via `ROLEPOD_MCP_WEB_ENGINE=selenium`). Not
+  implemented because verifying it needs a running grid we don't
+  have access to in this session.
+- **Replay execution beyond what v0.4 specifies** — recording +
+  ddmin minimization shipped in v0.3 (the `rolepod-mcp replay`
+  CLI re-runs a bundle without an agent in the loop). Full
+  replay-determinism guarantees, schema freeze of the bundle
+  format, and forward-compat across versions are still **v0.4**
+  scope.
+- **Docs site, blog post, MCP server directory submission, npm
+  publish, GitHub publish** — these are **v0.5** open-source
+  launch tasks. They require user action (account ownership,
+  registration, narrative writing) and are not in-session
+  deliverables.
+- **Adoption metrics** (1k weekly downloads, 3+ external
+  contributors, third-party integration documented) — **v1.0**
+  exit criteria. Time and market dependent; cannot be produced
+  inside an implementation session.
 
 ## [0.2.0] — 2026-05-24
 
