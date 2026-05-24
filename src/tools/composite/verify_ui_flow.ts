@@ -5,6 +5,7 @@ import {
   type VerifyUiFlowInput,
 } from "../../schema/tools.js";
 import type { A11ySnapshot, Engine, Session } from "../../engine/Engine.js";
+import { ddmin } from "../../replay/minimize.js";
 import { RolepodMcpError } from "../../util/errors.js";
 import { ok, safeHandler } from "../result.js";
 import type { ToolContext, ToolModule } from "../types.js";
@@ -176,39 +177,47 @@ async function minimize(
   initialSteps: VerifyUiFlowInput["steps"],
   runDir: string,
 ): Promise<MinimizeResult> {
-  let current = [...initialSteps];
-  const removedFromOriginal: number[] = [];
-  const originalIndex: number[] = initialSteps.map((_, i) => i);
+  // Tag each step with its original index so we can report what was removed.
+  type Tagged = { step: VerifyUiFlowInput["steps"][number]; origIndex: number };
+  const tagged: Tagged[] = initialSteps.map((step, origIndex) => ({ step, origIndex }));
   let attempts = 0;
 
-  let i = 0;
-  while (i < current.length) {
+  const predicate = async (subset: Tagged[]): Promise<boolean> => {
     attempts += 1;
-    const candidate = [...current.slice(0, i), ...current.slice(i + 1)];
-    const outcome = await runFlow(ctx, args, candidate, runDir, {
-      captureEvidence: false,
-      bundleName: "minimize-tmp.json",
-    });
-    if (outcome.passed) {
-      removedFromOriginal.push(originalIndex[i]!);
-      current = candidate;
-      originalIndex.splice(i, 1);
-      // do NOT advance i — re-test the new step that took position i
-    } else {
-      i += 1;
-    }
-  }
+    const outcome = await runFlow(
+      ctx,
+      args,
+      subset.map((t) => t.step),
+      runDir,
+      { captureEvidence: false, bundleName: "minimize-tmp.json" },
+    );
+    return outcome.passed;
+  };
+
+  const minimal = await ddmin(tagged, predicate);
+  const remainingIdx = new Set(minimal.map((t) => t.origIndex));
+  const removed = tagged
+    .map((t) => t.origIndex)
+    .filter((i) => !remainingIdx.has(i));
 
   // One final capture run with the minimized sequence to anchor evidence.
   let replayPath: string | undefined;
-  if (current.length !== initialSteps.length) {
-    const finalRun = await runFlow(ctx, args, current, runDir, {
-      captureEvidence: true,
-      bundleName: "replay-minimized.json",
-    });
+  if (minimal.length !== initialSteps.length) {
+    const finalRun = await runFlow(
+      ctx,
+      args,
+      minimal.map((t) => t.step),
+      runDir,
+      { captureEvidence: true, bundleName: "replay-minimized.json" },
+    );
     replayPath = finalRun.evidence.replay_bundle;
   }
-  return { steps: current, removed: removedFromOriginal.sort((a, b) => a - b), attempts, replayPath };
+  return {
+    steps: minimal.map((t) => t.step),
+    removed: removed.sort((a, b) => a - b),
+    attempts,
+    replayPath,
+  };
 }
 
 // ---------------------------------------------------------------------------

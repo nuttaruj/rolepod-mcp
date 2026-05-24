@@ -24,9 +24,8 @@ export const extractUiStateTool: ToolModule<typeof extractUiStateShape> = {
       let session: Session;
       let openedHere = false;
       if (args.session_id) {
-        const engine = ctx.registry.engineFor(args.session_id);
-        session = { id: args.session_id, platform: "web" };
-        void engine;
+        const platform = ctx.registry.platformOf(args.session_id);
+        session = { id: args.session_id, platform };
       } else if (args.open) {
         session = await ctx.registry.open(args.open);
         openedHere = true;

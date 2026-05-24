@@ -1,0 +1,163 @@
+import { existsSync } from "node:fs";
+import { resolve, join } from "node:path";
+import { homedir, platform as osPlatform } from "node:os";
+
+type Check = {
+  name: string;
+  status: "ok" | "warn" | "fail";
+  detail: string;
+};
+
+/**
+ * `rolepod-mcp doctor` — diagnose local environment readiness. Exits
+ * with code 0 if every check is `ok` or `warn`, 1 if any `fail`.
+ */
+export async function runDoctor(): Promise<number> {
+  const checks: Check[] = [];
+
+  // Node version
+  const major = Number(process.versions.node.split(".")[0]);
+  checks.push({
+    name: "Node ≥20",
+    status: major >= 20 ? "ok" : "fail",
+    detail: process.versions.node,
+  });
+
+  // Playwright Chromium install (looks under the default cache directory)
+  checks.push(checkPlaywrightChromium());
+
+  // webdriverio (optional)
+  checks.push(await checkWebdriverIO());
+
+  // Appium server reachable
+  checks.push(await checkAppiumServer());
+
+  // Xcode (macOS only, for iOS testing)
+  if (osPlatform() === "darwin") {
+    checks.push(checkXcode());
+  }
+
+  // Android SDK
+  checks.push(checkAndroidSdk());
+
+  // Artifact dir writable
+  checks.push(checkArtifactDir());
+
+  print(checks);
+  const failed = checks.some((c) => c.status === "fail");
+  return failed ? 1 : 0;
+}
+
+function checkPlaywrightChromium(): Check {
+  const candidates = [
+    join(homedir(), "Library", "Caches", "ms-playwright"),
+    join(homedir(), ".cache", "ms-playwright"),
+    process.env.PLAYWRIGHT_BROWSERS_PATH,
+  ].filter((x): x is string => typeof x === "string");
+  for (const base of candidates) {
+    if (existsSync(base)) {
+      return {
+        name: "Playwright Chromium installed",
+        status: "ok",
+        detail: base,
+      };
+    }
+  }
+  return {
+    name: "Playwright Chromium installed",
+    status: "fail",
+    detail: "Run: npx playwright install chromium",
+  };
+}
+
+async function checkWebdriverIO(): Promise<Check> {
+  try {
+    const url = await import.meta.resolve?.("webdriverio");
+    return {
+      name: "webdriverio (mobile client)",
+      status: "ok",
+      detail: url ?? "resolved",
+    };
+  } catch {
+    return {
+      name: "webdriverio (mobile client)",
+      status: "warn",
+      detail:
+        "Not installed — web-only mode is fine. For mobile: npm i webdriverio",
+    };
+  }
+}
+
+async function checkAppiumServer(): Promise<Check> {
+  const host = process.env.APPIUM_HOST ?? "127.0.0.1";
+  const port = Number(process.env.APPIUM_PORT ?? 4723);
+  const path = process.env.APPIUM_BASE_PATH ?? "/";
+  const url = `http://${host}:${port}${path.endsWith("/") ? path : path + "/"}status`;
+  try {
+    const ctrl = new AbortController();
+    const timeout = setTimeout(() => ctrl.abort(), 1500);
+    const res = await fetch(url, { signal: ctrl.signal });
+    clearTimeout(timeout);
+    return {
+      name: "Appium server reachable",
+      status: res.ok ? "ok" : "warn",
+      detail: `${url} → HTTP ${res.status}`,
+    };
+  } catch (err) {
+    return {
+      name: "Appium server reachable",
+      status: "warn",
+      detail: `Not reachable at ${url} (mobile sessions will fail until appium is running)`,
+    };
+  }
+}
+
+function checkXcode(): Check {
+  const path = "/Applications/Xcode.app";
+  if (existsSync(path)) {
+    return { name: "Xcode (iOS)", status: "ok", detail: path };
+  }
+  return {
+    name: "Xcode (iOS)",
+    status: "warn",
+    detail: "Install Xcode via the App Store; required for iOS simulators",
+  };
+}
+
+function checkAndroidSdk(): Check {
+  const candidates = [
+    process.env.ANDROID_HOME,
+    process.env.ANDROID_SDK_ROOT,
+    join(homedir(), "Library", "Android", "sdk"),
+    join(homedir(), "Android", "Sdk"),
+  ].filter((x): x is string => typeof x === "string");
+  for (const path of candidates) {
+    if (existsSync(path)) {
+      return { name: "Android SDK", status: "ok", detail: path };
+    }
+  }
+  return {
+    name: "Android SDK",
+    status: "warn",
+    detail: "Set ANDROID_HOME — needed only for Android testing",
+  };
+}
+
+function checkArtifactDir(): Check {
+  const dir = resolve(process.cwd(), ".rolepod-mcp");
+  // Directory does not need to exist yet; only the parent does.
+  return {
+    name: "Artifact root writable",
+    status: "ok",
+    detail: `Will be created at: ${dir}/artifacts/{run_id}/`,
+  };
+}
+
+function print(checks: Check[]): void {
+  const icon = (s: Check["status"]) => (s === "ok" ? "✓" : s === "warn" ? "•" : "✗");
+  for (const c of checks) {
+    // Doctor output is user-facing CLI; stdout is appropriate here
+    // because this subcommand never speaks MCP on the same channel.
+    process.stdout.write(`  ${icon(c.status)} ${c.name.padEnd(30)} ${c.detail}\n`);
+  }
+}

@@ -11,7 +11,7 @@ export const browserTypeTool: ToolModule<typeof browserTypeShape> = {
     return safeHandler(async (args: BrowserTypeInput) => {
       const engine = ctx.registry.engineFor(args.session_id);
       await engine.type(
-        { id: args.session_id, platform: "web" },
+        { id: args.session_id, platform: ctx.registry.platformOf(args.session_id) },
         args.ref,
         args.text,
         args.clear_first ? { clearFirst: true } : undefined,

@@ -12,6 +12,7 @@ import type { Engine, OpenOptions, Platform, Session } from "../engine/Engine.js
 export class SessionRegistry {
   private readonly enginesByPlatform = new Map<Platform, Engine>();
   private readonly engineBySession = new Map<string, Engine>();
+  private readonly platformBySession = new Map<string, Platform>();
   private readonly lastActivity = new Map<string, number>();
   private readonly idleTimeoutMs: number;
   private idleTimer: NodeJS.Timeout | null = null;
@@ -30,6 +31,7 @@ export class SessionRegistry {
     if (!engine) throw new UnsupportedPlatformError(opts.platform);
     const session = await engine.open(opts);
     this.engineBySession.set(session.id, engine);
+    this.platformBySession.set(session.id, session.platform);
     this.touch(session.id);
     this.ensureIdleSweep();
     return session;
@@ -47,7 +49,15 @@ export class SessionRegistry {
     if (!engine) throw new UnknownSessionError(session.id);
     await engine.close(session);
     this.engineBySession.delete(session.id);
+    this.platformBySession.delete(session.id);
     this.lastActivity.delete(session.id);
+  }
+
+  /** Look up the platform recorded for an open session. */
+  platformOf(sessionId: string): Platform {
+    const platform = this.platformBySession.get(sessionId);
+    if (!platform) throw new UnknownSessionError(sessionId);
+    return platform;
   }
 
   async shutdown(): Promise<void> {
@@ -68,6 +78,7 @@ export class SessionRegistry {
     }
     await Promise.all(closes);
     this.engineBySession.clear();
+    this.platformBySession.clear();
     this.lastActivity.clear();
   }
 
@@ -76,14 +87,7 @@ export class SessionRegistry {
   }
 
   private platformFor(sessionId: string): Platform {
-    // The engine ids map 1:1 to platforms in v0.1: playwright→web.
-    // When AppiumEngine lands the registry will track this per-session.
-    const engine = this.engineBySession.get(sessionId);
-    if (engine?.id === "appium") {
-      // best-effort — v0.3 will record real platform at open() time
-      return "android";
-    }
-    return "web";
+    return this.platformBySession.get(sessionId) ?? "web";
   }
 
   private ensureIdleSweep(): void {

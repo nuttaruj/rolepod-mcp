@@ -1,0 +1,55 @@
+name: Feature request
+description: Suggest a capability that fits rolepod-mcp's brief.
+title: "[feat] "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before submitting, please read `brief/01-vision.md` and confirm the proposal fits the **non-goals** section. Features that move us toward "test framework", "AI agent", or "Playwright clone" will be declined.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What real workflow is currently blocked or painful?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: |
+        Concrete change. If it's a new MCP tool, include the tool name, input schema, and expected output. If it's a skill change, paste the SKILL.md diff.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - "Engine layer"
+        - "Tool layer (atomic)"
+        - "Tool layer (composite)"
+        - "Shipped skill"
+        - "Plugin / CLI integration"
+        - "Docs"
+        - "CI / build / release"
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What did you reject, and why?
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Brief alignment
+      options:
+        - label: This does NOT add an internal LLM call (D-004).
+          required: true
+        - label: This does NOT add a fallback chain inside a shipped skill (D-024).
+          required: true
+        - label: I have skimmed `brief/08-decisions.md` for prior rejections of similar ideas.
+          required: true

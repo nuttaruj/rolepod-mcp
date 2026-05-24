@@ -20,24 +20,28 @@ compatible with this project's MIT license (see `LICENSE`).
 
 ### Forked files
 
-> **Note (v0.1):** The v0.1 PoC implements the Chromium accessibility path
-> using Playwright's built-in `page.accessibility.snapshot()` directly and
-> does **not** yet contain forked alumnium code. The alumnium fork lands in
-> v0.2 alongside the full atomic + composite surface, and mobile drivers in
-> v0.3. Files derived from alumnium will carry the header below.
-
-When code is forked, each forked file will carry this header:
-
-```
-/*
- * Originally from alumnium-hq/alumnium (MIT License).
- * Source commit: <SHA>
- * Modified for rolepod-mcp.
- */
-```
-
-A `UPSTREAM_TRACKING.md` will be added when the first fork lands to record
-the upstream commit SHA and date.
+> **Note (v0.3):** After surveying alumnium during scaffolding we chose
+> an **inspired-by** reimplementation rather than a verbatim fork. See
+> [`UPSTREAM_TRACKING.md`](UPSTREAM_TRACKING.md) for the reasoning,
+> the upstream commit SHA referenced, and the quarterly cherry-pick
+> policy.
+>
+> The Chromium AT path uses Playwright 1.60's built-in
+> `page.ariaSnapshot({mode:'ai'})` directly. The mobile AT extractors
+> (`src/engine/a11y/xcuitest.ts`, `uiautomator2.ts`) are
+> alumnium-inspired Original code parsing Appium's XML page source via
+> `fast-xml-parser`.
+>
+> Should literal alumnium source be copied in a future revision, each
+> file will carry this header:
+>
+> ```
+> /*
+>  * Originally from alumnium-hq/alumnium (MIT License).
+>  * Source commit: <SHA>
+>  * Modified for rolepod-mcp.
+>  */
+> ```
 
 ### Upstream MIT notice
 
@@ -85,6 +89,14 @@ own license; this section is acknowledgement only.
   `rolepod_visual_diff`.
 - `pngjs` — MIT — PNG encode/decode for baseline + diff images in
   `rolepod_visual_diff`.
+- `fast-xml-parser` — MIT — Parses Appium's XML page source in the
+  mobile AT normalizers (`xcuitest.ts`, `uiautomator2.ts`).
+
+## Optional npm dependencies
+
+- `webdriverio` — MIT — Loaded lazily by `AppiumEngine` when a mobile
+  session is requested. Web-only installs skip it via npm
+  `optionalDependencies`.
 
 ## Build-time-only dependencies
 

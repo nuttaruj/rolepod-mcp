@@ -15,7 +15,7 @@ export const browserSnapshotTool: ToolModule<typeof browserSnapshotShape> = {
     return safeHandler(async (args: BrowserSnapshotInput) => {
       const engine = ctx.registry.engineFor(args.session_id);
       const snap = await engine.snapshot(
-        { id: args.session_id, platform: "web" },
+        { id: args.session_id, platform: ctx.registry.platformOf(args.session_id) },
         args.mode,
       );
       return ok({

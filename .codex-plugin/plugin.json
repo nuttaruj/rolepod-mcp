@@ -1,0 +1,45 @@
+{
+  "name": "rolepod-mcp",
+  "version": "0.3.0",
+  "description": "Multi-platform UI/mobile automation for AI agents — 4 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e) + MCP server with 15 tools. v0.3 adds AppiumEngine scaffolding for iOS/Android; web is production-ready via Playwright.",
+  "author": {
+    "name": "nuttaruj",
+    "url": "https://github.com/nuttaruj"
+  },
+  "homepage": "https://github.com/nuttaruj/rolepod-mcp",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nuttaruj/rolepod-mcp"
+  },
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "ui-automation",
+    "playwright",
+    "appium",
+    "axe-core",
+    "visual-regression"
+  ],
+  "skills": "./skills/",
+  "mcp_servers": {
+    "rolepod-mcp": {
+      "command": "npx",
+      "args": ["-y", "@rolepod/mcp"],
+      "env": {}
+    }
+  },
+  "interface": {
+    "displayName": "rolepod-mcp",
+    "shortDescription": "UI verification, a11y audits, visual diff, e2e scaffolding — for AI coding agents.",
+    "longDescription": "rolepod-mcp ships an MCP server with 15 tools (10 atomic + 5 composite) and 4 user-invocable skills (/verify-ui, /audit-a11y, /visual-diff, /scaffold-e2e). Web is fully supported via Playwright; mobile (iOS/Android via Appium) lands in v0.3.",
+    "developerName": "nuttaruj",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write", "Bash"],
+    "websiteURL": "https://github.com/nuttaruj/rolepod-mcp",
+    "defaultPrompt": [
+      "Use /verify-ui to drive a real browser through the change I just made and prove it works.",
+      "Use /audit-a11y to scan the page for WCAG-AA issues.",
+      "Use /scaffold-e2e to convert this verify run into a runnable Playwright test."
+    ]
+  }
+}

@@ -11,7 +11,7 @@ export const browserClickTool: ToolModule<typeof browserClickShape> = {
     return safeHandler(async (args: BrowserClickInput) => {
       const engine = ctx.registry.engineFor(args.session_id);
       await engine.click(
-        { id: args.session_id, platform: "web" },
+        { id: args.session_id, platform: ctx.registry.platformOf(args.session_id) },
         args.ref,
         args.button ? { button: args.button } : undefined,
       );

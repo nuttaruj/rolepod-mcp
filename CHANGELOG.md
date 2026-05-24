@@ -7,6 +7,80 @@ release per `brief/03-tool-surface.md → Versioning policy`.
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-05-24
+
+Mobile scaffolding + CLI + governance. Web surface unchanged. Mobile
+code paths compile and the AT normalizers are unit-tested against
+fixture XML; real iOS/Android runs require a local Appium server +
+simulator and are gated by `npx rolepod-mcp doctor`.
+
+### Added
+
+- **AppiumEngine** (`src/engine/AppiumEngine.ts`) — full `Engine`
+  interface implementation backed by webdriverio + Appium 2.x.
+  Routes `platform: 'ios'` to XCUITest, `platform: 'android'` to
+  UIAutomator2. webdriverio is lazy-loaded as an
+  `optionalDependency`, so web-only installs skip it.
+- **Mobile AT normalizers** (`src/engine/a11y/xcuitest.ts`,
+  `uiautomator2.ts`) — inspired by alumnium (MIT) per D-005 and
+  `UPSTREAM_TRACKING.md`. Original implementations using
+  `fast-xml-parser`. Unit tests pass against fixture XML.
+- **`audit_a11y` scope={ref}** — tags the resolved element with a
+  temporary `data-rolepod-axe-scope` attribute so axe-core can
+  include it. Cleans up the tag in `finally`.
+- **`rolepod-mcp doctor`** — health check covering Node version,
+  Playwright Chromium install, webdriverio availability, Appium
+  server reachability, Xcode (macOS), Android SDK, artifact dir.
+- **`rolepod-mcp install:mobile`** — prints the iOS + Android setup
+  checklist with environment overrides.
+- **`rolepod-mcp replay <bundle.json>`** — re-runs a verify_ui_flow
+  replay bundle deterministically without an agent in the loop.
+  Exit code reflects pass/fail. Brings the v0.4 replay-execution
+  feature forward.
+- **`ddmin` minimization** (`src/replay/minimize.ts`) — classic
+  Zeller-Hildebrandt delta debugging. Replaces the v0.2 linear pass
+  inside `verify_ui_flow` reproduce mode.
+- **Per-CLI manifests** — `.cursor/mcp.json` (verified against
+  [cursor.com/docs/mcp](https://cursor.com/docs/mcp)) and
+  `.codex-plugin/plugin.json` (matches parent `rolepod`'s pattern).
+  Gemini deferred until the official schema is published.
+- **Governance documents** — `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`
+  (Contributor Covenant 2.1, fetched canonically from
+  EthicalSource), `SECURITY.md` (responsible disclosure via GitHub
+  Security Advisories).
+- **`.github/` templates** — bug + feature issue forms (verified
+  against the GitHub Issue Forms schema), PR template, CI workflow
+  for Node 20/22 × ubuntu/macos/windows running typecheck + tests +
+  build + smoke handshake.
+- **Public docs** — `docs/sessions.md`, `docs/artifacts.md`, plus
+  three recipes in `docs/recipes/`.
+- **`UPSTREAM_TRACKING.md`** — records the alumnium commit SHA
+  referenced (`94dea1e69…`), the inspired-by vs. literal-fork
+  decision, and the quarterly cherry-pick policy.
+
+### Changed
+
+- `SessionRegistry` now tracks `platform` per `session_id`
+  authoritatively via `platformOf(sessionId)`. Atomic tools and
+  composites consult it instead of hardcoding `'web'`.
+- `bin/rolepod-mcp` dispatches subcommands (`serve` default,
+  `doctor`, `install:mobile`, `replay`, `--version`, `--help`).
+- `factory.ts` splits `createWebEngine` + `createMobileEngine`;
+  `createEngine` is kept as a back-compat alias for v0.1 callers.
+
+### Not yet verified
+
+- **Real mobile runs** — code paths compile and the AT normalizers
+  unit-test cleanly, but smoke against a real iOS simulator /
+  Android emulator requires local infra (Xcode + Android SDK +
+  appium daemon). `rolepod-mcp doctor` reports readiness.
+- **Selenium engine** — deferred. v0.4 brief item, intentionally
+  skipped for this milestone because it requires a Selenium grid
+  to verify.
+- **npm publish** + **GitHub publish** — owner action.
+- **v1.0 adoption metrics** (1k downloads, 3+ external
+  contributors) — time + market dependent.
+
 ## [0.2.0] — 2026-05-24
 
 Web surface complete. Mobile still deferred to v0.3.

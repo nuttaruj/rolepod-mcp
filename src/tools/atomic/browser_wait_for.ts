@@ -16,7 +16,7 @@ export const browserWaitForTool: ToolModule<typeof browserWaitForShape> = {
       const engine = ctx.registry.engineFor(args.session_id);
       const start = Date.now();
       await engine.waitFor(
-        { id: args.session_id, platform: "web" },
+        { id: args.session_id, platform: ctx.registry.platformOf(args.session_id) },
         args.condition,
         args.timeout_ms,
       );

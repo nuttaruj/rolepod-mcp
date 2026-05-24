@@ -10,7 +10,7 @@ export const browserKeyTool: ToolModule<typeof browserKeyShape> = {
   build(ctx) {
     return safeHandler(async (args: BrowserKeyInput) => {
       const engine = ctx.registry.engineFor(args.session_id);
-      await engine.key({ id: args.session_id, platform: "web" }, args.key);
+      await engine.key({ id: args.session_id, platform: ctx.registry.platformOf(args.session_id) }, args.key);
       return ok({ pressed: true });
     });
   },

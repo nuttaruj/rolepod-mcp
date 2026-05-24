@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { ArtifactStore } from "./artifact/ArtifactStore.js";
-import { createEngine } from "./engine/factory.js";
+import { createMobileEngine, createWebEngine } from "./engine/factory.js";
 import { SessionRegistry } from "./session/SessionRegistry.js";
 import { browserClickTool } from "./tools/atomic/browser_click.js";
 import { browserCloseTool } from "./tools/atomic/browser_close.js";
@@ -21,7 +21,7 @@ import type { ToolContext } from "./tools/types.js";
 import { log } from "./util/log.js";
 
 export const SERVER_NAME = "rolepod-mcp";
-export const SERVER_VERSION = "0.2.0";
+export const SERVER_VERSION = "0.3.0";
 
 export type ServerHandle = {
   mcp: McpServer;
@@ -38,9 +38,15 @@ export type ServerHandle = {
 export function buildServer(
   opts: { artifactRoot?: string; idleTimeoutMs?: number } = {},
 ): ServerHandle {
-  const engine = createEngine();
+  const webEngine = createWebEngine();
   const registry = new SessionRegistry({ idleTimeoutMs: opts.idleTimeoutMs });
-  registry.register("web", engine);
+  registry.register("web", webEngine);
+  // Mobile engines are lazy — the webdriverio import only fires when an
+  // `ios`/`android` session is actually opened. So registering Appium
+  // unconditionally is safe for web-only installs.
+  const mobileEngine = createMobileEngine();
+  registry.register("ios", mobileEngine);
+  registry.register("android", mobileEngine);
 
   const storeOpts: ConstructorParameters<typeof ArtifactStore>[0] = {};
   if (opts.artifactRoot !== undefined) storeOpts.rootDir = opts.artifactRoot;

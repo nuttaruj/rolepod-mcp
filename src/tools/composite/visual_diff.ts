@@ -35,7 +35,7 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
 
       try {
         const buf = await engine.screenshot(
-          { id: session.id, platform: "web" },
+          { id: session.id, platform: session.platform },
           true,
         );
         const currentPath = await ctx.store.writeScreenshot(runDir, buf, "current");

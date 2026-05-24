@@ -8,8 +8,8 @@ export const browserCloseTool: ToolModule<typeof browserCloseShape> = {
   inputShape: browserCloseShape,
   build(ctx) {
     return safeHandler(async (args: BrowserCloseInput) => {
-      const engine = ctx.registry.engineFor(args.session_id);
-      await ctx.registry.close({ id: args.session_id, platform: engine.id === "appium" ? "android" : "web" });
+      const platform = ctx.registry.platformOf(args.session_id);
+      await ctx.registry.close({ id: args.session_id, platform });
       return ok({ closed: true });
     });
   },

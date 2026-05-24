@@ -1,0 +1,71 @@
+name: Bug report
+description: Something in rolepod-mcp behaves unexpectedly.
+title: "[bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Before submitting, please confirm:
+        - You have read the relevant section of `brief/` for the surface you are reporting on.
+        - You have run `npx rolepod-mcp doctor` and resolved any `✗` failures locally.
+  - type: input
+    id: version
+    attributes:
+      label: rolepod-mcp version
+      placeholder: "e.g. 0.3.0 (output of `npx rolepod-mcp --version`)"
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface
+      options:
+        - "Engine — Playwright (web)"
+        - "Engine — Appium (iOS)"
+        - "Engine — Appium (Android)"
+        - "Composite — verify_ui_flow"
+        - "Composite — audit_a11y"
+        - "Composite — visual_diff"
+        - "Composite — scaffold_e2e"
+        - "Composite — extract_ui_state"
+        - "Atomic tool"
+        - "Shipped skill markdown"
+        - "Plugin manifest / loader"
+        - "Other"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear, factual description of the misbehaviour.
+      placeholder: When I call X, I expected Y but got Z.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: |
+        Minimal steps to reproduce. A `replay.json` bundle pasted here is ideal — `npx rolepod-mcp replay <bundle.json>` re-runs deterministically.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Node version, browser/simulator version, output of `npx rolepod-mcp doctor`.
+      render: text
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      options:
+        - label: I searched existing issues and didn't find a duplicate.
+          required: true
+        - label: I'm willing to submit a PR with a fix or a failing test.
+          required: false

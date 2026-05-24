@@ -113,20 +113,9 @@ describe("audit_a11y", () => {
     expect(existsSync(body.report_path)).toBe(true);
   });
 
-  it("rejects scope={ref} with not_implemented_in_v02", async () => {
-    const handler = auditA11yTool.build(ctx);
-    const result = await handler({
-      open: { platform: "web", url: EXAMPLE_URL, headless: true },
-      level: "wcag-aa",
-      scope: { ref: "e1" },
-      report_format: "json",
-      close_on_finish: true,
-    });
-    expect(result.isError).toBe(true);
-    expect((result.structuredContent as { code: string }).code).toBe(
-      "not_implemented_in_v02",
-    );
-  });
+  // Note: v0.2 returned not_implemented_in_v02 for scope={ref}. v0.3
+  // implements it. Positive + negative scope={ref} cases live in
+  // tests/smoke/scope_ref.test.ts.
 });
 
 // ---------------------------------------------------------------------------

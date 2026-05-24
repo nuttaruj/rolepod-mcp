@@ -14,7 +14,7 @@ export const browserNavigateTool: ToolModule<typeof browserNavigateShape> = {
   build(ctx) {
     return safeHandler(async (args: BrowserNavigateInput) => {
       const engine = ctx.registry.engineFor(args.session_id);
-      await engine.navigate({ id: args.session_id, platform: "web" }, args.url);
+      await engine.navigate({ id: args.session_id, platform: ctx.registry.platformOf(args.session_id) }, args.url);
       return ok({ navigated: true, url: args.url });
     });
   },

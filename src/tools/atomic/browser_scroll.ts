@@ -11,7 +11,7 @@ export const browserScrollTool: ToolModule<typeof browserScrollShape> = {
     return safeHandler(async (args: BrowserScrollInput) => {
       const engine = ctx.registry.engineFor(args.session_id);
       await engine.scroll(
-        { id: args.session_id, platform: "web" },
+        { id: args.session_id, platform: ctx.registry.platformOf(args.session_id) },
         args.direction,
         args.amount,
         args.ref,

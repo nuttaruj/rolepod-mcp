@@ -1,0 +1,382 @@
+import { randomUUID } from "node:crypto";
+import {
+  RolepodMcpError,
+  UnknownRefError,
+  UnknownSessionError,
+  UnsupportedPlatformError,
+} from "../util/errors.js";
+import { log } from "../util/log.js";
+import {
+  parseUiAutomator2Tree,
+  type AndroidRefMeta,
+} from "./a11y/uiautomator2.js";
+import { parseXcuiTestTree, type IosRefMeta } from "./a11y/xcuitest.js";
+import type {
+  A11ySnapshot,
+  Direction,
+  Engine,
+  OpenOptions,
+  Platform,
+  Session,
+  WaitCondition,
+} from "./Engine.js";
+
+type MobileRefMeta = IosRefMeta | AndroidRefMeta;
+
+/**
+ * Minimal subset of the webdriverio `Browser` surface that AppiumEngine
+ * relies on. We type only what we use so that consumers without
+ * `webdriverio` installed still typecheck.
+ */
+type WdioElement = {
+  click(): Promise<void>;
+  clearValue(): Promise<void>;
+  setValue(value: string): Promise<void>;
+  isEnabled(): Promise<boolean>;
+};
+
+type WdioBrowser = {
+  sessionId: string;
+  capabilities: Record<string, unknown>;
+  getPageSource(): Promise<string>;
+  saveScreenshot(filepath?: string): Promise<Buffer>;
+  takeScreenshot(): Promise<string>; // base64
+  pressKeyCode?: (code: number) => Promise<void>;
+  $(selector: string): Promise<WdioElement> & WdioElement;
+  execute<T = unknown>(script: string, ...args: unknown[]): Promise<T>;
+  deleteSession(): Promise<void>;
+  pause(ms: number): Promise<void>;
+};
+
+type WdioRemote = (
+  opts: Record<string, unknown>,
+) => Promise<WdioBrowser>;
+
+type MobileSession = {
+  readonly id: string;
+  readonly platform: "ios" | "android";
+  readonly driver: WdioBrowser;
+};
+
+type SessionInternals = {
+  session: MobileSession;
+  refIndex: Map<string, MobileRefMeta>;
+  snapshotGeneration: number;
+  refGeneration: number;
+  lastSnapshotAt: string | null;
+};
+
+/**
+ * AppiumEngine — v0.3 mobile support via Appium 2.x + webdriverio.
+ *
+ * webdriverio is an `optionalDependency` (brief D-020). The engine
+ * lazy-imports it; if missing, every public method throws a structured
+ * `engine_error` with installation guidance.
+ *
+ * Smoke tests run against a real simulator only when one is reachable;
+ * unit tests for AT normalization use fixture XML strings (see
+ * `tests/unit/`).
+ */
+export class AppiumEngine implements Engine {
+  readonly id = "appium" as const;
+
+  private readonly sessions = new Map<string, SessionInternals>();
+  private wdioCache: WdioRemote | null = null;
+
+  async open(opts: OpenOptions): Promise<Session> {
+    if (opts.platform !== "ios" && opts.platform !== "android") {
+      throw new UnsupportedPlatformError(opts.platform);
+    }
+    const remote = await this.loadWdio();
+    const caps = this.buildCapabilities(opts);
+    const driver = await remote({
+      hostname: process.env.APPIUM_HOST ?? "127.0.0.1",
+      port: Number(process.env.APPIUM_PORT ?? 4723),
+      path: process.env.APPIUM_BASE_PATH ?? "/",
+      capabilities: caps,
+    });
+
+    const sessionId = randomUUID();
+    const session: MobileSession = { id: sessionId, platform: opts.platform, driver };
+    this.sessions.set(sessionId, {
+      session,
+      refIndex: new Map(),
+      snapshotGeneration: 0,
+      refGeneration: -1,
+      lastSnapshotAt: null,
+    });
+    log.info("mobile session opened", {
+      session_id: sessionId,
+      platform: opts.platform,
+      remote_session: driver.sessionId,
+    });
+    return { id: sessionId, platform: opts.platform };
+  }
+
+  async close(session: Session): Promise<void> {
+    const s = this.requireSession(session.id);
+    await s.session.driver.deleteSession().catch((err: unknown) =>
+      log.warn("appium deleteSession failed", { session_id: session.id, err: String(err) }),
+    );
+    this.sessions.delete(session.id);
+    log.info("mobile session closed", { session_id: session.id });
+  }
+
+  async snapshot(session: Session, _mode?: "visible" | "full"): Promise<A11ySnapshot> {
+    void _mode;
+    const s = this.requireSession(session.id);
+    const xml = await s.session.driver.getPageSource();
+    const normalized =
+      s.session.platform === "ios"
+        ? parseXcuiTestTree(xml)
+        : parseUiAutomator2Tree(xml);
+
+    s.snapshotGeneration += 1;
+    s.refGeneration = s.snapshotGeneration;
+    s.refIndex = normalized.refIndex as Map<string, MobileRefMeta>;
+    s.lastSnapshotAt = new Date().toISOString();
+
+    return {
+      session_id: session.id,
+      platform: s.session.platform,
+      url_or_screen: this.screenIdentifier(s),
+      taken_at: s.lastSnapshotAt,
+      tree: normalized.tree,
+    };
+  }
+
+  async click(session: Session, ref: string): Promise<void> {
+    const s = this.requireSession(session.id);
+    const el = await this.resolveElement(s, ref);
+    await el.click();
+    this.invalidateRefs(s);
+  }
+
+  async type(
+    session: Session,
+    ref: string,
+    text: string,
+    opts?: { clearFirst?: boolean },
+  ): Promise<void> {
+    const s = this.requireSession(session.id);
+    const el = await this.resolveElement(s, ref);
+    if (opts?.clearFirst) await el.clearValue();
+    await el.setValue(text);
+    this.invalidateRefs(s);
+  }
+
+  async key(session: Session, key: string): Promise<void> {
+    const s = this.requireSession(session.id);
+    if (s.session.platform === "android" && s.session.driver.pressKeyCode) {
+      const code = ANDROID_KEY_CODES[key];
+      if (code !== undefined) {
+        await s.session.driver.pressKeyCode(code);
+        this.invalidateRefs(s);
+        return;
+      }
+    }
+    throw new RolepodMcpError(
+      "not_implemented_in_v02",
+      `Mobile key("${key}") is partially supported in v0.3 — only well-known Android keycodes are mapped. iOS hardware keys land later.`,
+      { platform: s.session.platform, key },
+    );
+  }
+
+  async scroll(
+    session: Session,
+    dir: Direction,
+    amount = 400,
+    _ref?: string,
+  ): Promise<void> {
+    void _ref;
+    const s = this.requireSession(session.id);
+    // Mobile scroll is fiddly across drivers — fall back to a touch
+    // gesture via execute(). Most consumers will prefer a `wait_for`
+    // followed by a `click` on a ref that scrolls into view.
+    const action =
+      s.session.platform === "ios"
+        ? "mobile: swipe"
+        : "mobile: scrollGesture";
+    const params =
+      s.session.platform === "ios"
+        ? { direction: dir }
+        : { left: 100, top: 200, width: 400, height: 600, direction: dir, percent: amount / 1000 };
+    await s.session.driver
+      .execute(action, params)
+      .catch((err: unknown) => log.warn("scroll gesture failed", { err: String(err) }));
+    this.invalidateRefs(s);
+  }
+
+  async waitFor(
+    session: Session,
+    cond: WaitCondition,
+    timeoutMs = 10_000,
+  ): Promise<void> {
+    const s = this.requireSession(session.id);
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      if (cond.kind === "idle") {
+        await s.session.driver.pause(cond.ms);
+        this.invalidateRefs(s);
+        return;
+      }
+      const snap = await this.snapshot(session);
+      const matched =
+        cond.kind === "text_visible"
+          ? treeIncludesText(snap.tree, cond.text)
+          : cond.kind === "ref_exists"
+            ? treeIncludesText(snap.tree, cond.query)
+            : false;
+      if (matched) return;
+      await s.session.driver.pause(250);
+    }
+    throw new RolepodMcpError(
+      "engine_error",
+      `wait_for ${cond.kind} timed out after ${timeoutMs}ms`,
+      { condition: cond, timeout_ms: timeoutMs },
+    );
+  }
+
+  async screenshot(session: Session, _fullPage?: boolean): Promise<Buffer> {
+    void _fullPage;
+    const s = this.requireSession(session.id);
+    const b64 = await s.session.driver.takeScreenshot();
+    return Buffer.from(b64, "base64");
+  }
+
+  async navigate(_session: Session, _url: string): Promise<void> {
+    throw new UnsupportedPlatformError(_session.platform);
+  }
+
+  // -------------------------------------------------------------------------
+  // Internals
+  // -------------------------------------------------------------------------
+
+  private async loadWdio(): Promise<WdioRemote> {
+    if (this.wdioCache) return this.wdioCache;
+    try {
+      // Avoid TypeScript pulling the (optional) module into static types.
+      const mod = (await import(/* @vite-ignore */ "webdriverio")) as unknown as {
+        remote: WdioRemote;
+      };
+      this.wdioCache = mod.remote;
+      return mod.remote;
+    } catch {
+      throw new RolepodMcpError(
+        "engine_error",
+        "Mobile support needs webdriverio (and a running Appium server). Run `npx rolepod-mcp install:mobile` for the setup checklist.",
+      );
+    }
+  }
+
+  private buildCapabilities(opts: OpenOptions): Record<string, unknown> {
+    const caps: Record<string, unknown> = {};
+    if (opts.platform === "ios") {
+      caps.platformName = "iOS";
+      caps["appium:automationName"] = "XCUITest";
+      if (opts.device) caps["appium:deviceName"] = opts.device;
+      if (opts.bundle_id) caps["appium:bundleId"] = opts.bundle_id;
+    } else {
+      caps.platformName = "Android";
+      caps["appium:automationName"] = "UiAutomator2";
+      if (opts.emulator) caps["appium:avd"] = opts.emulator;
+      if (opts.app_package) caps["appium:appPackage"] = opts.app_package;
+      if (opts.app_activity) caps["appium:appActivity"] = opts.app_activity;
+    }
+    if (opts.locale) caps["appium:language"] = opts.locale;
+    return caps;
+  }
+
+  private screenIdentifier(s: SessionInternals): string {
+    const caps = s.session.driver.capabilities as Record<string, unknown>;
+    return String(
+      caps["appium:bundleId"] ??
+        caps["appium:appPackage"] ??
+        caps.platformName ??
+        s.session.platform,
+    );
+  }
+
+  private requireSession(sessionId: string): SessionInternals {
+    const s = this.sessions.get(sessionId);
+    if (!s) throw new UnknownSessionError(sessionId);
+    return s;
+  }
+
+  private async resolveElement(s: SessionInternals, ref: string): Promise<WdioElement> {
+    if (s.refGeneration !== s.snapshotGeneration) {
+      throw new RolepodMcpError(
+        "stale_ref",
+        `Ref "${ref}" is stale — re-snapshot before retrying.`,
+        {
+          session_id: s.session.id,
+          ref,
+          last_valid_snapshot_at: s.lastSnapshotAt,
+        },
+      );
+    }
+    const meta = s.refIndex.get(ref);
+    if (!meta) throw new UnknownRefError(s.session.id, ref);
+    const selector = this.toSelector(meta);
+    return s.session.driver.$(selector);
+  }
+
+  private toSelector(meta: MobileRefMeta): string {
+    if (meta.kind === "ios") {
+      if (meta.accessibilityId) return `~${meta.accessibilityId}`;
+      const chain = `**/${meta.type}[${meta.classChainIndex}]`;
+      return `-ios class chain:${chain}`;
+    }
+    if (meta.resourceId) {
+      return `-android uiautomator:new UiSelector().resourceId("${escape(meta.resourceId)}")`;
+    }
+    if (meta.contentDesc) return `~${meta.contentDesc}`;
+    if (meta.text) {
+      return `-android uiautomator:new UiSelector().text("${escape(meta.text)}")`;
+    }
+    return `-android uiautomator:new UiSelector().className("${meta.androidClass}").instance(${meta.classIndex - 1})`;
+  }
+
+  private invalidateRefs(s: SessionInternals): void {
+    s.snapshotGeneration += 1;
+  }
+}
+
+const ANDROID_KEY_CODES: Record<string, number> = {
+  Enter: 66,
+  Tab: 61,
+  Escape: 111,
+  Back: 4,
+  Home: 3,
+  Menu: 82,
+  Search: 84,
+  Backspace: 67,
+  ArrowUp: 19,
+  ArrowDown: 20,
+  ArrowLeft: 21,
+  ArrowRight: 22,
+};
+
+function escape(s: string): string {
+  return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+function treeIncludesText(node: { name?: string; value?: string; children?: unknown[] }, text: string): boolean {
+  const target = text.toLowerCase();
+  const visit = (n: { name?: string; value?: string; children?: unknown[] }): boolean => {
+    if ((n.name && n.name.toLowerCase().includes(target)) ||
+        (n.value && n.value.toLowerCase().includes(target))) return true;
+    if (!n.children) return false;
+    for (const c of n.children as Array<{ name?: string; value?: string; children?: unknown[] }>) {
+      if (visit(c)) return true;
+    }
+    return false;
+  };
+  return visit(node);
+}
+
+// Helper so we don't accidentally export this typo'd internal name.
+function _platformGuard(p: Platform): void {
+  void p;
+}
+void _platformGuard;

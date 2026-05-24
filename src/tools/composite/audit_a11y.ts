@@ -36,29 +36,42 @@ export const auditA11yTool: ToolModule<typeof auditA11yShape> = {
   inputShape: auditA11yShape,
   build(ctx) {
     return safeHandler(async (args: AuditA11yInput) => {
-      if (args.scope !== "page") {
-        throw new RolepodMcpError(
-          "not_implemented_in_v02",
-          "scope={ref} is scheduled for v0.3 — audit_a11y currently supports scope='page' only.",
-          { requested_scope: args.scope },
-        );
-      }
-
       const { runId, runDir } = await ctx.store.startRun("audit");
       const session = await ctx.registry.open(args.open);
       const engine = ctx.registry.engineFor(session.id);
       if (!(engine instanceof PlaywrightEngine)) {
         throw new RolepodMcpError(
           "unsupported_engine",
-          "audit_a11y currently requires PlaywrightEngine.",
+          "audit_a11y currently requires PlaywrightEngine (mobile a11y audit lands later).",
         );
       }
       const page = engine.getPageForSession(session.id);
 
       let reportPath: string | undefined;
       let issues: Array<Record<string, unknown>> = [];
+      let scopeTagged = false;
       try {
+        // Tag the scope element so axe-core can include it via CSS.
+        if (args.scope !== "page") {
+          // refresh refIndex so the supplied ref is meaningful
+          await engine.snapshot({ id: session.id, platform: "web" });
+          const ref = args.scope.ref;
+          const locator = page.locator(`aria-ref=${ref}`);
+          if ((await locator.count()) === 0) {
+            throw new RolepodMcpError(
+              "unknown_ref",
+              `Ref "${ref}" not found in the current snapshot.`,
+              { session_id: session.id, ref },
+            );
+          }
+          await locator
+            .first()
+            .evaluate((el) => el.setAttribute("data-rolepod-axe-scope", "true"));
+          scopeTagged = true;
+        }
+
         const builder = new AxeBuilder({ page }).withTags(TAGS_BY_LEVEL[args.level]);
+        if (scopeTagged) builder.include("[data-rolepod-axe-scope]");
         const results = await builder.analyze();
         issues = results.violations.flatMap((v) =>
           v.nodes.map((n, idx) => ({
@@ -91,6 +104,13 @@ export const auditA11yTool: ToolModule<typeof auditA11yShape> = {
           );
         }
       } finally {
+        if (scopeTagged) {
+          await page
+            .locator("[data-rolepod-axe-scope]")
+            .first()
+            .evaluate((el) => el.removeAttribute("data-rolepod-axe-scope"))
+            .catch(() => undefined);
+        }
         if (args.close_on_finish) {
           await ctx.registry.close(session).catch(() => undefined);
         }

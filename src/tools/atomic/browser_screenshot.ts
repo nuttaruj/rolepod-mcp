@@ -16,7 +16,7 @@ export const browserScreenshotTool: ToolModule<typeof browserScreenshotShape> = 
       const engine = ctx.registry.engineFor(args.session_id);
       const { runId, runDir } = await ctx.store.startRun("snap");
       const buf = await engine.screenshot(
-        { id: args.session_id, platform: "web" },
+        { id: args.session_id, platform: ctx.registry.platformOf(args.session_id) },
         args.full_page ?? false,
       );
       const path = await ctx.store.writeScreenshot(runDir, buf, "shot");
