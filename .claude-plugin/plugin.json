@@ -1,13 +1,13 @@
 {
-  "name": "rolepod-mcp",
-  "version": "0.3.1",
+  "name": "rolepod-uiproof",
+  "version": "0.4.0",
   "description": "Multi-platform UI/mobile automation for AI agents — 4 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e) + MCP server with 15 tools. v0.3 adds AppiumEngine scaffolding for iOS/Android, scope={ref} audit, replay CLI, ddmin minimization, doctor + install:mobile.",
   "author": {
     "name": "nuttaruj",
     "url": "https://github.com/nuttaruj"
   },
-  "homepage": "https://github.com/nuttaruj/rolepod-mcp",
-  "repository": "https://github.com/nuttaruj/rolepod-mcp.git",
+  "homepage": "https://github.com/nuttaruj/rolepod-uiproof",
+  "repository": "https://github.com/nuttaruj/rolepod-uiproof.git",
   "license": "MIT",
   "keywords": [
     "mcp",
@@ -17,9 +17,9 @@
     "verify-ui"
   ],
   "mcpServers": {
-    "rolepod-mcp": {
+    "rolepod-uiproof": {
       "command": "npx",
-      "args": ["-y", "@rolepod/mcp"],
+      "args": ["-y", "@rolepod/uiproof"],
       "env": {}
     }
   }

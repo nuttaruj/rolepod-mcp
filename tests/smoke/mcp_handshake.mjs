@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { resolve } from "node:path";
 
-const bin = resolve(process.cwd(), "dist/bin/rolepod-mcp.js");
+const bin = resolve(process.cwd(), "dist/bin/rolepod-uiproof.js");
 const child = spawn("node", [bin], { stdio: ["pipe", "pipe", "inherit"] });
 
 function send(obj) {

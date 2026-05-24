@@ -1,11 +1,11 @@
 ---
 name: visual-diff
-description: Capture a screenshot of the current UI and compare against a stored baseline under ./.rolepod-mcp/baselines/. First capture for a baseline_id seeds the baseline; subsequent capture diffs it.
+description: Capture a screenshot of the current UI and compare against a stored baseline under ./.rolepod-uiproof/baselines/. First capture for a baseline_id seeds the baseline; subsequent capture diffs it.
 ---
 
 # /visual-diff
 
-Single-backend skill. Calls **`rolepod_visual_diff`** on the rolepod-mcp
+Single-backend skill. Calls **`rolepod_visual_diff`** on the rolepod-uiproof
 MCP server. No fallback (D-024).
 
 ## When to use
@@ -32,7 +32,7 @@ MCP server. No fallback (D-024).
 
 ## Outputs
 
-- `run_id` — folder under `./.rolepod-mcp/artifacts/`.
+- `run_id` — folder under `./.rolepod-uiproof/artifacts/`.
 - `diff_pct` — fraction of differing pixels.
 - `passed` — `diff_pct <= threshold_pct`.
 - `baseline_path`, `current_path`, `diff_image_path`.
@@ -48,7 +48,7 @@ MCP server. No fallback (D-024).
 
 Surface plainly:
 
-> The `/visual-diff` skill needs the **rolepod-mcp** MCP server, which is
+> The `/visual-diff` skill needs the **rolepod-uiproof** MCP server, which is
 > not currently available. Confirm the plugin is installed and try again.
 
 Do not attempt another backend (D-024).

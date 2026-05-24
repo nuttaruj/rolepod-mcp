@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability
-    url: https://github.com/nuttaruj/rolepod-mcp/security/advisories/new
+    url: https://github.com/nuttaruj/rolepod-uiproof/security/advisories/new
     about: Report security issues privately via GitHub Security Advisories. Do not open a public issue.
   - name: Design discussion
-    url: https://github.com/nuttaruj/rolepod-mcp/discussions
+    url: https://github.com/nuttaruj/rolepod-uiproof/discussions
     about: Pre-RFC design conversation that does not yet fit a feature request.

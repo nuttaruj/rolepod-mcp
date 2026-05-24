@@ -5,7 +5,7 @@ description: Run an axe-core accessibility audit on a page against WCAG-A / WCAG
 
 # /audit-a11y
 
-Single-backend skill. Calls **`rolepod_audit_a11y`** on the rolepod-mcp
+Single-backend skill. Calls **`rolepod_audit_a11y`** on the rolepod-uiproof
 MCP server. No fallback (D-024).
 
 ## When to use
@@ -29,7 +29,7 @@ MCP server. No fallback (D-024).
 
 ## Outputs
 
-- `run_id` — folder under `./.rolepod-mcp/artifacts/`.
+- `run_id` — folder under `./.rolepod-uiproof/artifacts/`.
 - `counts` — issue counts by severity.
 - `issues[]` — each `{ wcag_ref, severity, ref, description, fix_suggestion, target }`.
 - `report_path` — path to the JSON or markdown report.
@@ -47,7 +47,7 @@ MCP server. No fallback (D-024).
 
 Surface plainly:
 
-> The `/audit-a11y` skill needs the **rolepod-mcp** MCP server, which is
+> The `/audit-a11y` skill needs the **rolepod-uiproof** MCP server, which is
 > not currently available. Confirm the plugin is installed and try again.
 
 Do not attempt another backend (D-024).
@@ -71,6 +71,6 @@ Returns:
   "run_id": "audit_…",
   "counts": { "critical": 0, "serious": 0, "moderate": 0, "minor": 0 },
   "issues": [],
-  "report_path": ".rolepod-mcp/artifacts/audit_…/report.json"
+  "report_path": ".rolepod-uiproof/artifacts/audit_…/report.json"
 }
 ```

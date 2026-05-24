@@ -1,12 +1,12 @@
 name: Feature request
-description: Suggest a capability that fits rolepod-mcp's brief.
+description: Suggest a capability that fits rolepod-uiproof's brief.
 title: "[feat] "
 labels: ["enhancement", "triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Before submitting, please confirm the proposal does NOT move us toward "test framework", "AI agent", or "Playwright clone" — those directions are out of scope. rolepod-mcp is a thin, Lead-driven MCP layer for UI verification, a11y, visual diff, and e2e scaffolding.
+        Before submitting, please confirm the proposal does NOT move us toward "test framework", "AI agent", or "Playwright clone" — those directions are out of scope. rolepod-uiproof is a thin, Lead-driven MCP layer for UI verification, a11y, visual diff, and e2e scaffolding.
   - type: textarea
     id: problem
     attributes:

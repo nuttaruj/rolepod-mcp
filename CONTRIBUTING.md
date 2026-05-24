@@ -1,6 +1,6 @@
-# Contributing to rolepod-mcp
+# Contributing to rolepod-uiproof
 
-Thanks for your interest. rolepod-mcp is a small, opinionated project.
+Thanks for your interest. rolepod-uiproof is a small, opinionated project.
 For non-trivial changes, please open a discussion or issue first so we
 can confirm the change fits the project's scope before you sink time
 into a PR.
@@ -8,8 +8,8 @@ into a PR.
 ## Quick start for contributors
 
 ```bash
-git clone <repo-url> rolepod-mcp
-cd rolepod-mcp
+git clone <repo-url> rolepod-uiproof
+cd rolepod-uiproof
 npm install
 npx playwright install chromium
 npm run typecheck
@@ -29,7 +29,7 @@ The boundaries that matter:
 | `src/tools/composite/*` | Multi-step orchestrations + artifact writing + assertion eval | Driver work (delegate to engine) |
 | `src/schema/tools.ts` | The single source of truth for tool names + zod shapes | Tool behaviour |
 | `src/replay/*` | Replay bundle write + minimization algorithm | Snapshotting (engine), evidence (artifacts) |
-| `src/artifact/*` | `./.rolepod-mcp/` filesystem layout | Anything else |
+| `src/artifact/*` | `./.rolepod-uiproof/` filesystem layout | Anything else |
 
 Cross the wrong boundary and the reviewer will ask you to move the code.
 
@@ -49,7 +49,7 @@ Cross the wrong boundary and the reviewer will ask you to move the code.
 ## What we usually decline
 
 - Any feature whose justification is *"because Playwright MCP has it"*.
-  rolepod-mcp is intentionally smaller — Lead-driven, single-purpose
+  rolepod-uiproof is intentionally smaller — Lead-driven, single-purpose
   composites, no internal LLM.
 - Internal LLM calls inside the MCP server (D-004).
 - Fallback chains inside shipped skills (D-024).

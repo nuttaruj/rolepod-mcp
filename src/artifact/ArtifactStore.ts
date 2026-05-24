@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { log } from "../util/log.js";
 
 /**
- * Writes artifacts under `./.rolepod-mcp/artifacts/{run_id}/` (D-026).
+ * Writes artifacts under `./.rolepod-uiproof/artifacts/{run_id}/` (D-026).
  *
  * v0.1 emits two formats: PNG screenshots and a JSON replay bundle. Future
  * milestones extend the format set (HAR, console log, a11y tree, video).
@@ -29,7 +29,7 @@ export class ArtifactStore {
   readonly rootDir: string;
 
   constructor(opts: { rootDir?: string } = {}) {
-    this.rootDir = opts.rootDir ?? resolve(process.cwd(), ".rolepod-mcp", "artifacts");
+    this.rootDir = opts.rootDir ?? resolve(process.cwd(), ".rolepod-uiproof", "artifacts");
   }
 
   /** Allocate a fresh run id and ensure its directory exists. */
@@ -78,7 +78,7 @@ export class ArtifactStore {
     return absDir;
   }
 
-  /** Root for stored visual baselines: `./.rolepod-mcp/baselines/`. */
+  /** Root for stored visual baselines: `./.rolepod-uiproof/baselines/`. */
   get baselineDir(): string {
     return resolve(this.rootDir, "..", "baselines");
   }

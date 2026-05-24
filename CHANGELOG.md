@@ -7,6 +7,93 @@ release.
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-05-24
+
+**Breaking: project renamed `rolepod-mcp` → `rolepod-uiproof`.**
+
+Reason: `rolepod-mcp` was too generic for the planned ecosystem
+(`rolepod-uiproof`, `rolepod-apiproof`, `rolepod-perfproof`,
+`rolepod-secproof` — each a focused "proof of X" MCP). Locking the
+generic `-mcp` suffix on the UI/mobile project blocked sibling
+naming. Done now while public adoption is effectively zero
+(<6 hours since first publish).
+
+### Renamed
+
+| Surface | Before | After |
+|---|---|---|
+| npm package | `@rolepod/mcp` | `@rolepod/uiproof` |
+| GitHub repo | `nuttaruj/rolepod-mcp` | `nuttaruj/rolepod-uiproof` |
+| Plugin name | `rolepod-mcp` | `rolepod-uiproof` |
+| Marketplace name | `rolepod-mcp` | `rolepod-uiproof` |
+| Display name | `Rolepod MCP` | `Rolepod UIProof` |
+| CLI bin | `rolepod-mcp` | `rolepod-uiproof` |
+| Artifact dir | `./.rolepod-mcp/` | `./.rolepod-uiproof/` |
+| Server name constant | `rolepod-mcp` | `rolepod-uiproof` |
+
+### Unchanged (deliberate)
+
+- **MCP tool names stay `rolepod_*`** — these are the org namespace
+  (per the project's tool-naming convention), not the project name.
+  Sibling MCPs will register their own sub-namespaces (`rolepod_api_*`,
+  `rolepod_perf_*`) without collisions.
+- The 4 shipped skills' slugs stay `/verify-ui`, `/audit-a11y`,
+  `/visual-diff`, `/scaffold-e2e`.
+- All input/output schemas unchanged.
+
+### Migration
+
+**npm consumers:**
+
+```bash
+npm uninstall @rolepod/mcp
+npm install @rolepod/uiproof
+```
+
+`@rolepod/mcp@0.3.x` is deprecated on npm with a pointer to
+`@rolepod/uiproof`. Existing installs continue to work but will print
+a deprecation notice.
+
+**Claude Code marketplace:**
+
+```bash
+claude plugin uninstall rolepod-mcp@rolepod-mcp
+claude plugin marketplace remove rolepod-mcp
+claude plugin marketplace add nuttaruj/rolepod-uiproof
+claude plugin install rolepod-uiproof@rolepod-uiproof
+```
+
+**Codex CLI:**
+
+```bash
+codex plugin remove rolepod-mcp@rolepod-mcp
+codex plugin marketplace remove rolepod-mcp
+codex plugin marketplace add nuttaruj/rolepod-uiproof
+codex plugin add rolepod-uiproof@rolepod-uiproof
+```
+
+**Cursor workspace MCP** — re-pull `.cursor/mcp.json`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nuttaruj/rolepod-uiproof/main/.cursor/mcp.json -o .cursor/mcp.json
+```
+
+**Artifact baselines** — if you have `./.rolepod-mcp/baselines/<id>.png`
+files from earlier runs, move them under the new path so visual_diff
+finds them:
+
+```bash
+mv .rolepod-mcp .rolepod-uiproof
+```
+
+**GitHub URLs** — `nuttaruj/rolepod-mcp` returns a permanent 301
+redirect to the new URL; existing clones continue to work but should
+update their remote:
+
+```bash
+git remote set-url origin https://github.com/nuttaruj/rolepod-uiproof.git
+```
+
 ## [0.3.1] — 2026-05-24
 
 First **live mobile smoke** completed end-to-end against a real iOS

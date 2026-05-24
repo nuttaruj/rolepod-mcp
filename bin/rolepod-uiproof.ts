@@ -6,15 +6,15 @@ import { runReplay } from "../src/cli/replay.js";
 import { buildServer, SERVER_VERSION } from "../src/server.js";
 import { log } from "../src/util/log.js";
 
-const HELP = `rolepod-mcp ${SERVER_VERSION}
+const HELP = `rolepod-uiproof ${SERVER_VERSION}
 
 Usage:
-  rolepod-mcp                 Start the MCP server on stdio (default)
-  rolepod-mcp doctor          Health check (Node, Playwright, Appium, SDKs)
-  rolepod-mcp install:mobile  Print mobile setup checklist (iOS / Android)
-  rolepod-mcp replay <file>   Re-run a verify_ui_flow replay bundle
-  rolepod-mcp --version       Print version
-  rolepod-mcp --help          This help
+  rolepod-uiproof                 Start the MCP server on stdio (default)
+  rolepod-uiproof doctor          Health check (Node, Playwright, Appium, SDKs)
+  rolepod-uiproof install:mobile  Print mobile setup checklist (iOS / Android)
+  rolepod-uiproof replay <file>   Re-run a verify_ui_flow replay bundle
+  rolepod-uiproof --version       Print version
+  rolepod-uiproof --help          This help
 `;
 
 async function main(): Promise<void> {
@@ -34,7 +34,7 @@ async function main(): Promise<void> {
     case "replay": {
       const target = rest[0];
       if (!target) {
-        process.stderr.write("Usage: rolepod-mcp replay <bundle.json>\n");
+        process.stderr.write("Usage: rolepod-uiproof replay <bundle.json>\n");
         process.exit(2);
       }
       process.exit(await runReplay(target));
@@ -70,7 +70,7 @@ async function startServer(): Promise<void> {
   process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
   await server.mcp.connect(transport);
-  log.info("rolepod-mcp connected on stdio");
+  log.info("rolepod-uiproof connected on stdio");
 }
 
 main().catch((err: unknown) => {

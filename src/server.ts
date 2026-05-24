@@ -20,8 +20,8 @@ import { visualDiffTool } from "./tools/composite/visual_diff.js";
 import type { ToolContext } from "./tools/types.js";
 import { log } from "./util/log.js";
 
-export const SERVER_NAME = "rolepod-mcp";
-export const SERVER_VERSION = "0.3.1";
+export const SERVER_NAME = "rolepod-uiproof";
+export const SERVER_VERSION = "0.4.0";
 
 export type ServerHandle = {
   mcp: McpServer;
@@ -87,7 +87,7 @@ export function buildServer(
     );
   }
 
-  log.info("rolepod-mcp server built", {
+  log.info("rolepod-uiproof server built", {
     version: SERVER_VERSION,
     tools: tools.map((t) => t.name),
   });

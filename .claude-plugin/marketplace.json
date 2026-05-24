@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "rolepod-mcp",
+  "name": "rolepod-uiproof",
   "description": "Multi-platform UI / mobile automation MCP server + 4 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e) for AI coding agents.",
   "owner": {
     "name": "nuttaruj",
@@ -8,15 +8,15 @@
   },
   "plugins": [
     {
-      "name": "rolepod-mcp",
+      "name": "rolepod-uiproof",
       "source": "./",
-      "description": "15 MCP tools (10 atomic browser/mobile primitives + 5 composite workflows) + 4 user-invocable skills. Web production-ready via Playwright; mobile (iOS/Android) via Appium scaffolded — see `rolepod-mcp doctor` for readiness.",
-      "version": "0.3.1",
+      "description": "15 MCP tools (10 atomic browser/mobile primitives + 5 composite workflows) + 4 user-invocable skills. Web production-ready via Playwright; mobile (iOS/Android) via Appium scaffolded — see `rolepod-uiproof doctor` for readiness.",
+      "version": "0.4.0",
       "author": {
         "name": "nuttaruj"
       },
-      "homepage": "https://github.com/nuttaruj/rolepod-mcp",
-      "repository": "https://github.com/nuttaruj/rolepod-mcp",
+      "homepage": "https://github.com/nuttaruj/rolepod-uiproof",
+      "repository": "https://github.com/nuttaruj/rolepod-uiproof",
       "license": "MIT",
       "category": "productivity",
       "tags": [

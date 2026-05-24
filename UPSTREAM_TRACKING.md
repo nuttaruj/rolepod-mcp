@@ -1,6 +1,6 @@
 # Upstream tracking
 
-Records the upstream sources that have informed rolepod-mcp's design and
+Records the upstream sources that have informed rolepod-uiproof's design and
 implementation, so that future cherry-picks or audits can locate them.
 
 ## alumnium-hq/alumnium (MIT)

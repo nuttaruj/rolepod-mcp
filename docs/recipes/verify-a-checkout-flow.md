@@ -39,19 +39,19 @@ Result includes `run_id`, `passed`, `evidence_paths.screenshots`,
 ## 2. Convert to a Playwright Test once the flow stabilises
 
 ```
-/scaffold-e2e from .rolepod-mcp/artifacts/verify_…/replay.json
+/scaffold-e2e from .rolepod-uiproof/artifacts/verify_…/replay.json
 using playwright-test framework
 ```
 
 Generates a `.spec.ts` under
-`./.rolepod-mcp/artifacts/scaffold_…/`. Move it into
+`./.rolepod-uiproof/artifacts/scaffold_…/`. Move it into
 `tests/e2e/checkout.spec.ts`, install `@playwright/test`, and the
 flow now runs in CI without an AI agent.
 
-## 3. Hand the bundle to `rolepod-mcp replay` for headless re-runs
+## 3. Hand the bundle to `rolepod-uiproof replay` for headless re-runs
 
 ```
-npx rolepod-mcp replay .rolepod-mcp/artifacts/verify_…/replay.json
+npx rolepod-uiproof replay .rolepod-uiproof/artifacts/verify_…/replay.json
 ```
 
 Exit code `0` if it passes, `1` otherwise. Useful as a pre-deploy

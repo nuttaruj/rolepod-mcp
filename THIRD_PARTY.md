@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-rolepod-mcp depends on and (in later milestones) incorporates code from the
+rolepod-uiproof depends on and (in later milestones) incorporates code from the
 following third-party projects. All listed projects are MIT-licensed and
 compatible with this project's MIT license (see `LICENSE`).
 
@@ -39,7 +39,7 @@ compatible with this project's MIT license (see `LICENSE`).
 > /*
 >  * Originally from alumnium-hq/alumnium (MIT License).
 >  * Source commit: <SHA>
->  * Modified for rolepod-mcp.
+>  * Modified for rolepod-uiproof.
 >  */
 > ```
 

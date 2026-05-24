@@ -1,6 +1,6 @@
 # Sessions
 
-Every interaction with rolepod-mcp happens inside a **session** — an
+Every interaction with rolepod-uiproof happens inside a **session** — an
 opaque handle returned by `rolepod_browser_open` that ties together a
 real browser context (web) or mobile driver (iOS / Android) with the
 ref index of its most recent accessibility snapshot.
@@ -45,7 +45,7 @@ catching it.
 
 ## Multiple sessions per server
 
-One `rolepod-mcp` process can hold many concurrent sessions — open a
+One `rolepod-uiproof` process can hold many concurrent sessions — open a
 browser session AND an Android emulator session in parallel, route
 tool calls by `session_id`. Sessions are serialized per-id (two clicks
 on the same session don't fire simultaneously) but parallel across

@@ -1,7 +1,7 @@
 import type { A11yNode } from "../schema/tools.js";
 
 /**
- * The single seam between rolepod-mcp's tool layer and any
+ * The single seam between rolepod-uiproof's tool layer and any
  * browser/mobile automation backend.
  *
  * Implementations: PlaywrightEngine (web), AppiumEngine (iOS + Android),

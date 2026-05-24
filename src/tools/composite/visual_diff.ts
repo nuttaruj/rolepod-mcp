@@ -16,7 +16,7 @@ import type { ToolModule } from "../types.js";
 export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
   name: ToolNames.visualDiff,
   description:
-    "Capture a screenshot and compare against a named baseline under ./.rolepod-mcp/baselines/. First call for a baseline_id seeds the baseline (passed=true, diff_pct=0). Subsequent calls return the diff percentage and an annotated diff image.",
+    "Capture a screenshot and compare against a named baseline under ./.rolepod-uiproof/baselines/. First call for a baseline_id seeds the baseline (passed=true, diff_pct=0). Subsequent calls return the diff percentage and an annotated diff image.",
   inputShape: visualDiffShape,
   build(ctx) {
     return safeHandler(async (args: VisualDiffInput) => {

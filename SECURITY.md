@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-rolepod-mcp follows a pre-1.0 versioning policy: until v1.0, only the
+rolepod-uiproof follows a pre-1.0 versioning policy: until v1.0, only the
 **most recent minor release** is supported for security fixes. After
 v1.0, the most recent two minor releases will receive backports.
 
@@ -18,7 +18,7 @@ v1.0, the most recent two minor releases will receive backports.
 
 Please report security issues privately via GitHub Security Advisories:
 
-1. Go to <https://github.com/nuttaruj/rolepod-mcp/security/advisories>.
+1. Go to <https://github.com/nuttaruj/rolepod-uiproof/security/advisories>.
 2. Click **Report a vulnerability**.
 3. Provide:
    - A description of the issue.
@@ -45,7 +45,7 @@ In scope:
 - The MCP server runtime (`src/`, `bin/`).
 - Shipped skills (`skills/*/SKILL.md`).
 - The plugin manifests.
-- Build artifacts published to npm under `@rolepod/mcp`.
+- Build artifacts published to npm under `@rolepod/uiproof`.
 
 Out of scope:
 
@@ -64,7 +64,7 @@ Out of scope:
 - No telemetry, ever (D-013).
 - No network exposure by default — stdio transport only. SSE
   transport is opt-in and binds to localhost.
-- Artifacts are written under `./.rolepod-mcp/` in the current
+- Artifacts are written under `./.rolepod-uiproof/` in the current
   working directory; no system-wide writes.
 
 ## Disclosure

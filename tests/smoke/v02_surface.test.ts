@@ -26,7 +26,7 @@ let store: ArtifactStore;
 let ctx: ToolContext;
 
 beforeAll(() => {
-  tmpRoot = mkdtempSync(join(tmpdir(), "rolepod-mcp-v02-"));
+  tmpRoot = mkdtempSync(join(tmpdir(), "rolepod-uiproof-v02-"));
   const engine = new PlaywrightEngine();
   registry = new SessionRegistry({ idleTimeoutMs: 0 });
   registry.register("web", engine);

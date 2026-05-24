@@ -4,7 +4,7 @@ export function runInstallMobile(): number {
   const os = osPlatform();
   const lines: string[] = [];
 
-  lines.push("rolepod-mcp install:mobile — setup checklist\n");
+  lines.push("rolepod-uiproof install:mobile — setup checklist\n");
   lines.push("Mobile support is OPTIONAL. Skip if you only target the web.\n");
 
   lines.push("1. Install the Node client:");
@@ -31,7 +31,7 @@ export function runInstallMobile(): number {
   lines.push("     • `adb devices` confirms an emulator or device is reachable\n");
 
   lines.push("5. Verify:");
-  lines.push("     npx rolepod-mcp doctor\n");
+  lines.push("     npx rolepod-uiproof doctor\n");
 
   lines.push("Environment overrides (optional):");
   lines.push("     APPIUM_HOST       default: 127.0.0.1");

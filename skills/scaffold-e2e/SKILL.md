@@ -5,7 +5,7 @@ description: Generate a runnable e2e test file (playwright-test, vitest+playwrig
 
 # /scaffold-e2e
 
-Single-backend skill. Calls **`rolepod_scaffold_e2e`** on the rolepod-mcp
+Single-backend skill. Calls **`rolepod_scaffold_e2e`** on the rolepod-uiproof
 MCP server. No fallback (D-024).
 
 ## When to use
@@ -33,7 +33,7 @@ MCP server. No fallback (D-024).
 
 ## Outputs
 
-- `run_id` — folder under `./.rolepod-mcp/artifacts/`.
+- `run_id` — folder under `./.rolepod-uiproof/artifacts/`.
 - `test_file_path` — path to the generated test file.
 - `language` — `typescript` | `python`.
 - `dependencies` — packages the user needs to install.
@@ -52,7 +52,7 @@ MCP server. No fallback (D-024).
 
 Surface plainly:
 
-> The `/scaffold-e2e` skill needs the **rolepod-mcp** MCP server, which
+> The `/scaffold-e2e` skill needs the **rolepod-uiproof** MCP server, which
 > is not currently available. Confirm the plugin is installed and try
 > again.
 
@@ -67,7 +67,7 @@ Do not attempt another backend (D-024).
   "framework": "playwright-test",
   "scenario_nl": "user opens example.com and clicks Learn more",
   "url": "https://example.com",
-  "recorded_bundle": ".rolepod-mcp/artifacts/verify_…/replay.json"
+  "recorded_bundle": ".rolepod-uiproof/artifacts/verify_…/replay.json"
 }
 ```
 
@@ -76,7 +76,7 @@ Returns:
 ```json
 {
   "run_id": "scaffold_…",
-  "test_file_path": ".rolepod-mcp/artifacts/scaffold_…/user-opens-example-com-and-clicks-learn-more.spec.ts",
+  "test_file_path": ".rolepod-uiproof/artifacts/scaffold_…/user-opens-example-com-and-clicks-learn-more.spec.ts",
   "language": "typescript",
   "dependencies": ["@playwright/test"],
   "setup_notes": "Install: npm i -D @playwright/test && npx playwright install. Run: npx playwright test.",

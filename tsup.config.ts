@@ -3,7 +3,7 @@ import { defineConfig } from "tsup";
 export default defineConfig({
   entry: {
     index: "src/index.ts",
-    "bin/rolepod-mcp": "bin/rolepod-mcp.ts",
+    "bin/rolepod-uiproof": "bin/rolepod-uiproof.ts",
   },
   format: ["esm"],
   target: "node20",

@@ -9,7 +9,7 @@ let tmpRoot: string;
 let bundlePath: string;
 
 beforeAll(() => {
-  tmpRoot = mkdtempSync(join(tmpdir(), "rolepod-mcp-replay-"));
+  tmpRoot = mkdtempSync(join(tmpdir(), "rolepod-uiproof-replay-"));
   bundlePath = join(tmpRoot, "replay.json");
   writeFileSync(
     bundlePath,
@@ -28,7 +28,7 @@ afterAll(() => {
   rmSync(tmpRoot, { recursive: true, force: true });
 });
 
-describe("rolepod-mcp replay", () => {
+describe("rolepod-uiproof replay", () => {
   it("exits 0 on a passing replay bundle", async () => {
     const chunks: string[] = [];
     const orig = process.stdout.write.bind(process.stdout);

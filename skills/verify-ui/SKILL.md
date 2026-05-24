@@ -1,11 +1,11 @@
 ---
 name: verify-ui
-description: Drive a real browser session through steps and assert expected outcomes; save evidence under ./.rolepod-mcp/artifacts/. Use when a diff changes visible behavior and code-level tests do not prove it. v0.1 web only.
+description: Drive a real browser session through steps and assert expected outcomes; save evidence under ./.rolepod-uiproof/artifacts/. Use when a diff changes visible behavior and code-level tests do not prove it. v0.1 web only.
 ---
 
 # /verify-ui
 
-Single-backend skill. Calls **`rolepod_verify_ui_flow`** on the rolepod-mcp
+Single-backend skill. Calls **`rolepod_verify_ui_flow`** on the rolepod-uiproof
 MCP server and surfaces the structured result. No fallback (D-024) — if the
 tool is unavailable, this skill fails with a clear diagnostic so the caller
 (typically the user, or the parent `rolepod` plugin's `check-work` skill)
@@ -56,7 +56,7 @@ can decide what to do next.
 
 ## Outputs
 
-- `run_id` — folder name under `./.rolepod-mcp/artifacts/`.
+- `run_id` — folder name under `./.rolepod-uiproof/artifacts/`.
 - `passed` — boolean.
 - `failed_at_step` *(when not passed)* — 0-based step index.
 - `failure_reason` *(when not passed)* — human-readable explanation.
@@ -76,12 +76,12 @@ can decide what to do next.
 
 ## If the tool is unavailable
 
-The rolepod-mcp MCP server is not registered or is not responding. Surface
+The rolepod-uiproof MCP server is not registered or is not responding. Surface
 this plainly:
 
-> The `/verify-ui` skill needs the **rolepod-mcp** MCP server, which is
+> The `/verify-ui` skill needs the **rolepod-uiproof** MCP server, which is
 > not currently available. Confirm the plugin is installed and try again,
-> or check that `npx -y @rolepod/mcp` is reachable.
+> or check that `npx -y @rolepod/uiproof` is reachable.
 
 Do **not** attempt this work via Playwright MCP, Chrome DevTools MCP, or
 any other backend from inside this skill. Multi-backend routing is the
@@ -116,8 +116,8 @@ Returns:
   "run_id": "verify_20260524T101512_a1b2c3d4",
   "passed": true,
   "evidence_paths": {
-    "screenshots": [".rolepod-mcp/artifacts/verify_…/final.png"],
-    "replay_bundle": ".rolepod-mcp/artifacts/verify_…/replay.json"
+    "screenshots": [".rolepod-uiproof/artifacts/verify_…/final.png"],
+    "replay_bundle": ".rolepod-uiproof/artifacts/verify_…/replay.json"
   },
   "final_url_or_screen": "https://example.com/"
 }
@@ -127,7 +127,7 @@ Returns:
 
 The MCP server is not registered. The skill returns:
 
-> The `/verify-ui` skill needs the **rolepod-mcp** MCP server, which is
+> The `/verify-ui` skill needs the **rolepod-uiproof** MCP server, which is
 > not currently available. Confirm the plugin is installed and try again.
 
 No other backend is attempted. The caller decides whether to escalate to

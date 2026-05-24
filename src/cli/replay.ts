@@ -7,7 +7,7 @@ import { verifyUiFlowTool } from "../tools/composite/verify_ui_flow.js";
 import type { ToolContext } from "../tools/types.js";
 
 /**
- * `rolepod-mcp replay <bundle.json>` — re-runs a verify_ui_flow
+ * `rolepod-uiproof replay <bundle.json>` — re-runs a verify_ui_flow
  * replay bundle deterministically, with no agent in the loop. Exit
  * code 0 = passed, 1 = failed or error.
  */

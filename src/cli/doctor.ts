@@ -9,7 +9,7 @@ type Check = {
 };
 
 /**
- * `rolepod-mcp doctor` — diagnose local environment readiness. Exits
+ * `rolepod-uiproof doctor` — diagnose local environment readiness. Exits
  * with code 0 if every check is `ok` or `warn`, 1 if any `fail`.
  */
 export async function runDoctor(): Promise<number> {
@@ -154,7 +154,7 @@ function checkAndroidSdk(): Check {
 }
 
 function checkArtifactDir(): Check {
-  const dir = resolve(process.cwd(), ".rolepod-mcp");
+  const dir = resolve(process.cwd(), ".rolepod-uiproof");
   // Directory does not need to exist yet; only the parent does.
   return {
     name: "Artifact root writable",

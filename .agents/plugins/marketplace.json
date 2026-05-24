@@ -1,17 +1,17 @@
 {
-  "name": "rolepod-mcp",
+  "name": "rolepod-uiproof",
   "interface": {
-    "displayName": "Rolepod MCP",
+    "displayName": "Rolepod UIProof",
     "shortDescription": "UI verification, a11y audits, visual diff, e2e scaffolding for AI coding agents.",
     "developerName": "nuttaruj",
-    "websiteURL": "https://github.com/nuttaruj/rolepod-mcp"
+    "websiteURL": "https://github.com/nuttaruj/rolepod-uiproof"
   },
   "plugins": [
     {
-      "name": "rolepod-mcp",
+      "name": "rolepod-uiproof",
       "source": {
         "source": "local",
-        "path": "./plugins/rolepod-mcp"
+        "path": "./plugins/rolepod-uiproof"
       },
       "policy": {
         "installation": "AVAILABLE"
