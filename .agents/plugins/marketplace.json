@@ -1,7 +1,7 @@
 {
   "name": "rolepod-mcp",
   "interface": {
-    "displayName": "rolepod-mcp",
+    "displayName": "Rolepod MCP",
     "shortDescription": "UI verification, a11y audits, visual diff, e2e scaffolding for AI coding agents.",
     "developerName": "nuttaruj",
     "websiteURL": "https://github.com/nuttaruj/rolepod-mcp"

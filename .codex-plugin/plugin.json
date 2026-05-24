@@ -29,7 +29,7 @@
     }
   },
   "interface": {
-    "displayName": "rolepod-mcp",
+    "displayName": "Rolepod MCP",
     "shortDescription": "UI verification, a11y audits, visual diff, e2e scaffolding — for AI coding agents.",
     "longDescription": "rolepod-mcp ships an MCP server with 15 tools (10 atomic + 5 composite) and 4 user-invocable skills (/verify-ui, /audit-a11y, /visual-diff, /scaffold-e2e). Web is fully supported via Playwright; mobile (iOS/Android via Appium) lands in v0.3.",
     "developerName": "nuttaruj",
