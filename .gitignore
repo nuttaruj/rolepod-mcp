@@ -31,3 +31,6 @@ yarn-error.log*
 
 # internal design specs — kept locally only
 brief/
+
+# claude harness local state
+.claude/
