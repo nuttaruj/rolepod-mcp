@@ -40,6 +40,7 @@
     ".cursor-plugin/",
     ".codex-plugin/",
     ".cursor/",
+    ".agents/",
     "README.md",
     "LICENSE",
     "THIRD_PARTY.md",

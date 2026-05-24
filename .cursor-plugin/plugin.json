@@ -1,0 +1,22 @@
+{
+  "name": "rolepod-mcp",
+  "displayName": "rolepod-mcp",
+  "version": "0.3.0",
+  "description": "Multi-platform UI / mobile automation MCP server + 4 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e) for AI coding agents. Web production-ready via Playwright; mobile (iOS/Android via Appium) scaffolded.",
+  "author": {
+    "name": "nuttaruj"
+  },
+  "homepage": "https://github.com/nuttaruj/rolepod-mcp",
+  "repository": "https://github.com/nuttaruj/rolepod-mcp",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "ui-automation",
+    "playwright",
+    "appium",
+    "accessibility",
+    "visual-regression",
+    "e2e",
+    "cursor"
+  ]
+}
