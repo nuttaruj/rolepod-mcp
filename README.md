@@ -2,7 +2,7 @@
 
 **rolepod-mcp gives Claude Code, Cursor, Codex CLI, and Gemini CLI a real browser/mobile driver — so the AI can actually click through your UI, audit accessibility, diff screenshots, and scaffold e2e tests instead of guessing.**
 
-One MCP server, one tool surface, four skills you invoke from chat. Web is production-ready via Playwright; iOS and Android are scaffolded via Appium and gated by a `doctor` health check. No internal LLM — your Lead agent drives every action.
+One MCP server, one tool surface, four skills you invoke from chat. Web is production-ready via Playwright; iOS and Android use Appium (same client as alumnium — needs a local Appium daemon + simulator/emulator, or a real device). No internal LLM — your Lead agent drives every action.
 
 ## What it helps with
 

@@ -70,11 +70,12 @@ simulator and are gated by `npx rolepod-mcp doctor`.
 
 ### Not yet verified — mapped to later milestones
 
-- **Real iOS / Android device runs** — gated by local infra
-  (Xcode + Android SDK + Appium daemon). `npx rolepod-mcp doctor`
-  reports readiness. Code paths compile and AT normalizers are
-  tested against fixture XML only; full simulator smoke arrives
-  when the infra is present. Scope: still **v0.3** (mobile).
+- **Mobile end-to-end runs** — same Appium contract as alumnium;
+  needs a local Appium daemon + iOS Simulator (or Android Emulator,
+  or real device). `npx rolepod-mcp doctor` reports readiness.
+  Code paths compile and AT normalizers are unit-tested against
+  fixture XML; live simulator smoke is the v0.3.x test-maturity
+  task. Scope: still **v0.3**.
 - **SeleniumEngine** — deferred to **v0.4** (legacy Selenium grid
   support, opt-in via `ROLEPOD_MCP_WEB_ENGINE=selenium`). Not
   implemented because verifying it needs a running grid we don't
