@@ -2,10 +2,9 @@
 
 ## Supported versions
 
-rolepod-mcp follows the brief's pre-1.0 versioning policy (see
-`brief/03-tool-surface.md → Versioning`). Until v1.0, only the **most
-recent minor release** is supported for security fixes. After v1.0,
-the most recent two minor releases will receive backports.
+rolepod-mcp follows a pre-1.0 versioning policy: until v1.0, only the
+**most recent minor release** is supported for security fixes. After
+v1.0, the most recent two minor releases will receive backports.
 
 | Version | Supported |
 |---|---|
@@ -56,7 +55,7 @@ Out of scope:
   promptly once a fix ships.
 - Misuse of the MCP server by an authenticated local user — the
   server explicitly runs as the user and inherits their browser
-  permissions (see `brief/02-architecture.md → Security model`).
+  permissions.
 - Findings that require modification of the user's local environment
   (`~/.cursor/mcp.json`, `~/.claude/`) to exploit.
 

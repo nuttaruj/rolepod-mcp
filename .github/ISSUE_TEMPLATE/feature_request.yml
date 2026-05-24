@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Before submitting, please read `brief/01-vision.md` and confirm the proposal fits the **non-goals** section. Features that move us toward "test framework", "AI agent", or "Playwright clone" will be declined.
+        Before submitting, please confirm the proposal does NOT move us toward "test framework", "AI agent", or "Playwright clone" — those directions are out of scope. rolepod-mcp is a thin, Lead-driven MCP layer for UI verification, a11y, visual diff, and e2e scaffolding.
   - type: textarea
     id: problem
     attributes:
@@ -51,5 +51,5 @@ body:
           required: true
         - label: This does NOT add a fallback chain inside a shipped skill (D-024).
           required: true
-        - label: I have skimmed `brief/08-decisions.md` for prior rejections of similar ideas.
+        - label: I have searched closed issues and PRs for prior rejections of similar ideas.
           required: true

@@ -4,14 +4,13 @@ import type { A11yNode } from "../../schema/tools.js";
 /**
  * Unified accessibility-tree normalization.
  *
- * v0.1 implements the Chromium path by parsing Playwright 1.60's
+ * Implements the Chromium path by parsing Playwright 1.60's
  * `page.ariaSnapshot({ mode: "ai" })` YAML output. Each leaf carries a
  * stable `[ref=eN]` marker that Playwright resolves back to a real
- * locator via `page.locator("aria-ref=eN")`. See brief/04-engine-layer.md.
+ * locator via `page.locator("aria-ref=eN")`.
  *
- * Forked alumnium code is not used in v0.1. Mobile A11y normalizers
- * (XCUITest / UIAutomator2) will be forked from alumnium when v0.3 lands
- * and will emit the same A11yNode shape — see THIRD_PARTY.md.
+ * Mobile A11y normalizers (XCUITest / UIAutomator2) are alumnium-inspired
+ * — see THIRD_PARTY.md + UPSTREAM_TRACKING.md.
  */
 
 /** Locator metadata for ref → driver resolution. Never sent to the Lead. */

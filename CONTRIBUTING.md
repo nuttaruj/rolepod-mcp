@@ -1,10 +1,9 @@
 # Contributing to rolepod-mcp
 
-Thanks for your interest. rolepod-mcp is a small, opinionated project
-with a sharp brief — please read `brief/00-INDEX.md` once before
-proposing a non-trivial change. The brief is the contract; if a change
-needs to deviate, name the decision in `brief/08-decisions.md` and
-explain why.
+Thanks for your interest. rolepod-mcp is a small, opinionated project.
+For non-trivial changes, please open a discussion or issue first so we
+can confirm the change fits the project's scope before you sink time
+into a PR.
 
 ## Quick start for contributors
 
@@ -21,7 +20,6 @@ npm run smoke:mcp      # stdio handshake against the bin
 
 ## Source layout
 
-See `brief/02-architecture.md → Source layout` for the canonical map.
 The boundaries that matter:
 
 | Layer | Owns | Does NOT own |
@@ -51,7 +49,8 @@ Cross the wrong boundary and the reviewer will ask you to move the code.
 ## What we usually decline
 
 - Any feature whose justification is *"because Playwright MCP has it"*.
-  rolepod-mcp is intentionally smaller — see `brief/01-vision.md`.
+  rolepod-mcp is intentionally smaller — Lead-driven, single-purpose
+  composites, no internal LLM.
 - Internal LLM calls inside the MCP server (D-004).
 - Fallback chains inside shipped skills (D-024).
 - Schema-breaking changes after v1.0 ships without a deprecation
@@ -93,7 +92,7 @@ Cross the wrong boundary and the reviewer will ask you to move the code.
 
 ## Reviewer checklist (for maintainers)
 
-- [ ] Brief contract held (or D-xxx added explaining the deviation)?
+- [ ] Project scope held (no internal LLM; no fallback chains in shipped skills; web/mobile platform parity)?
 - [ ] Single-backend rule held for shipped skills?
 - [ ] No fallback chains in `skills/*/SKILL.md`?
 - [ ] Tool name additions reflected in `ToolNames`, server registry,

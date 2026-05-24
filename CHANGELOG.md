@@ -3,7 +3,7 @@
 All notable changes to this project are recorded here. Versions follow
 [Semantic Versioning](https://semver.org/). The schema-stability promise
 begins at **v1.0**; until then, breaking changes are possible at any
-release per `brief/03-tool-surface.md → Versioning policy`.
+release.
 
 ## [Unreleased]
 

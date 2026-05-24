@@ -12,7 +12,7 @@ import type { ToolModule } from "../types.js";
 /**
  * Returns the most-relevant accessibility-tree subtree plus the refs
  * matched by the question. **No LLM is invoked** — the Lead interprets
- * the returned subtree. See brief/03-tool-surface.md.
+ * the returned subtree.
  */
 export const extractUiStateTool: ToolModule<typeof extractUiStateShape> = {
   name: ToolNames.extractUiState,

@@ -2,7 +2,9 @@
  * Structured error types surfaced to MCP clients. Each carries enough
  * context for the Lead agent to recover (typically: re-snapshot, then retry).
  *
- * See brief/04-engine-layer.md → "Snapshot freshness rules" for D-010.
+ * Snapshot freshness rule: any state-changing call invalidates the current
+ * ref index; a stale ref returns `stale_ref` with the last valid snapshot
+ * timestamp so the Lead can re-snapshot and retry.
  */
 
 export type ErrorCode =

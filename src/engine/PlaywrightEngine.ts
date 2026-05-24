@@ -52,8 +52,8 @@ type SessionInternals = {
  * Chromium / Firefox / WebKit drivers and the built-in
  * `page.accessibility.snapshot()` API.
  *
- * The interface contract (Engine.ts) is shared with future AppiumEngine
- * and the optional SeleniumEngine. See brief/04-engine-layer.md.
+ * The interface contract (Engine.ts) is shared with AppiumEngine and the
+ * optional SeleniumEngine.
  */
 export class PlaywrightEngine implements Engine {
   readonly id = "playwright" as const;

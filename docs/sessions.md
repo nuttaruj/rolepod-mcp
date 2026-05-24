@@ -86,5 +86,6 @@ schema regardless of platform:
 | `type(ref, text)` | `locator.fill(text)` | `element.setValue(text)` | `element.setValue(text)` |
 | `key(name)` | `page.keyboard.press(name)` | (limited; v0.3+ partial) | `pressKeyCode(code)` |
 
-When in doubt about a behavioural detail, the brief
-(`brief/04-engine-layer.md`) is the contract.
+When in doubt about a behavioural detail, the engine source
+(`src/engine/Engine.ts` + `src/engine/PlaywrightEngine.ts` +
+`src/engine/AppiumEngine.ts`) is the contract.

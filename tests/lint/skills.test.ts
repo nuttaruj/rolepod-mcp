@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { ToolNames } from "../../src/schema/tools.js";
 
 /**
- * Skill lint — enforces the v0.2 contract from brief/11-plugin-skills.md.
+ * Skill lint — enforces the shipped-skill contract.
  *
  * Shipped skills MUST:
  * - have YAML frontmatter with a `description` field
  * - call exactly one `rolepod_*` tool that exists in `ToolNames`
- * - NOT contain a "fallback" / "backend resolution" section (D-024)
+ * - NOT contain a "fallback" / "backend resolution" section
  */
 
 const SKILLS_DIR = resolve(__dirname, "..", "..", "skills");

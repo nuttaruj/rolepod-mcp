@@ -91,7 +91,7 @@ async function checkWebdriverIO(): Promise<Check> {
       name: "webdriverio (mobile client, v0.3)",
       status: "warn",
       detail:
-        "Not installed — web works fine without it. Mobile is roadmap v0.3 (see brief/09-roadmap.md). For mobile: npm i webdriverio",
+        "Not installed — web works fine without it. Mobile is roadmap v0.3. For mobile: npm i webdriverio",
     };
   }
 }

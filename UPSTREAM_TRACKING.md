@@ -13,8 +13,8 @@ implementation, so that future cherry-picks or audits can locate them.
 
 ### Status
 
-The brief (`brief/04-engine-layer.md`, D-005) originally specified a
-*verbatim fork* of alumnium's `packages/typescript/src/drivers/` and
+The original engine-layer design specified a *verbatim fork* of
+alumnium's `packages/typescript/src/drivers/` and
 `packages/typescript/src/accessibility/`. After surveying the source
 during v0.3 scaffolding we instead chose an **inspired-by**
 reimplementation:

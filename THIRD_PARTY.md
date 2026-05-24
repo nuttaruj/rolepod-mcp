@@ -15,8 +15,8 @@ compatible with this project's MIT license (see `LICENSE`).
 - **Relationship:** Code is **forked** (copied with modification), not
   depended on as an npm package. The LLM-driven `Alumni` class, LangChain
   bindings, and OpenAI integration are **not** copied — only the driver and
-  accessibility layers. See `brief/04-engine-layer.md` (D-005) for the fork
-  rationale.
+  accessibility layers. See `UPSTREAM_TRACKING.md` for the fork rationale,
+  the upstream commit referenced, and the cherry-pick policy.
 
 ### Forked files
 

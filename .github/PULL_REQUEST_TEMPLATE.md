@@ -2,12 +2,10 @@
 
 <!-- 1–3 bullets. What changes and why. -->
 
-## Brief alignment
-
-<!-- If the diff deviates from `brief/`, name the decision (D-xxx) you're invoking or adding. -->
+## Scope
 
 - Layer touched: <!-- engine / tool / composite / skill / cli / build / docs -->
-- New decision recorded?  <!-- yes (see brief/08-decisions.md) / no -->
+- Does this deviate from project conventions (no internal LLM, single-backend shipped skills, flat layout)? If yes, why?
 
 ## Test plan
 

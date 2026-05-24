@@ -2,10 +2,10 @@ import type { A11yNode } from "../schema/tools.js";
 
 /**
  * The single seam between rolepod-mcp's tool layer and any
- * browser/mobile automation backend. See brief/04-engine-layer.md.
+ * browser/mobile automation backend.
  *
- * v0.1 ships PlaywrightEngine only. AppiumEngine (v0.3) and the optional
- * SeleniumEngine (v0.4) implement the same interface.
+ * Implementations: PlaywrightEngine (web), AppiumEngine (iOS + Android),
+ * optional SeleniumEngine (legacy grid, not yet implemented).
  */
 
 export type Platform = "web" | "ios" | "android";

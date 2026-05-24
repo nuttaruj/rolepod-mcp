@@ -162,7 +162,6 @@ The two are **independent**: install rolepod-mcp standalone and get a complete e
 - [docs/sessions.md](docs/sessions.md) — session lifecycle, stale-ref semantics, multi-session
 - [docs/artifacts.md](docs/artifacts.md) — `.rolepod-mcp/` layout, run_id convention, replay bundle format
 - [docs/recipes/](docs/recipes/) — `verify-a-checkout-flow`, `audit-a11y-during-review`, `visual-baseline-workflow`
-- [brief/](brief/) — full design brief: vision, architecture, tool surface, engine layer, decisions
 - [CHANGELOG.md](CHANGELOG.md) — release history with per-version "Not yet verified" notes mapped to milestones
 - [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
