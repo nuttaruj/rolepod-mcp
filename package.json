@@ -1,0 +1,66 @@
+{
+  "name": "@rolepod/mcp",
+  "version": "0.1.0",
+  "description": "Multi-platform UI/mobile automation for AI agents — MCP server + shipped skills.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "playwright",
+    "ui-automation",
+    "claude-code",
+    "rolepod"
+  ],
+  "homepage": "https://github.com/nuttaruj/rolepod-mcp",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nuttaruj/rolepod-mcp.git"
+  },
+  "license": "MIT",
+  "author": "nuttaruj",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "rolepod-mcp": "dist/bin/rolepod-mcp.js"
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/",
+    "skills/",
+    ".claude-plugin/",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:smoke": "vitest run tests/smoke",
+    "smoke:mcp": "node tests/smoke/mcp_handshake.mjs",
+    "start": "node dist/bin/rolepod-mcp.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "js-yaml": "^4.1.1",
+    "playwright": "^1.60.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.6.0",
+    "vitest": "^4.1.7"
+  }
+}

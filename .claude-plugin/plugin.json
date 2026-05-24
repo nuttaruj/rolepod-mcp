@@ -1,0 +1,26 @@
+{
+  "name": "rolepod-mcp",
+  "version": "0.1.0",
+  "description": "Multi-platform UI/mobile automation for AI agents — verify-ui skill + MCP server (v0.1 web only via Playwright).",
+  "author": {
+    "name": "nuttaruj",
+    "url": "https://github.com/nuttaruj"
+  },
+  "homepage": "https://github.com/nuttaruj/rolepod-mcp",
+  "repository": "https://github.com/nuttaruj/rolepod-mcp.git",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "playwright",
+    "ui-automation",
+    "claude-code",
+    "verify-ui"
+  ],
+  "mcpServers": {
+    "rolepod-mcp": {
+      "command": "npx",
+      "args": ["-y", "@rolepod/mcp"],
+      "env": {}
+    }
+  }
+}
