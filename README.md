@@ -1,143 +1,171 @@
 # rolepod-mcp
 
-> Multi-platform UI / mobile automation for AI coding agents — shipped as
-> a plugin (skills + MCP server) for Claude Code, Cursor, Codex CLI, and
-> Gemini CLI.
+**rolepod-mcp gives Claude Code, Cursor, Codex CLI, and Gemini CLI a real browser/mobile driver — so the AI can actually click through your UI, audit accessibility, diff screenshots, and scaffold e2e tests instead of guessing.**
 
-**Status:** v0.3 — web is production-ready (Playwright); mobile
-(iOS/Android via Appium) is scaffolded and unit-tested but requires
-local infra (Xcode + Android SDK + appium daemon) for full runs. Run
-`npx rolepod-mcp doctor` to see what's missing. See
-[`brief/09-roadmap.md`](brief/09-roadmap.md).
+One MCP server, one tool surface, four skills you invoke from chat. Web is production-ready via Playwright; iOS and Android are scaffolded via Appium and gated by a `doctor` health check. No internal LLM — your Lead agent drives every action.
 
-rolepod-mcp is the runtime sibling of the
-[`rolepod`](https://github.com/nuttaruj/rolepod) markdown plugin. The two
-are distinct: rolepod ships workflow skills and agents (markdown only);
-rolepod-mcp ships an MCP server plus its own user-invocable skills.
+## What it helps with
 
----
+- **Verify a UI change in seconds.** `/verify-ui` opens a real browser, runs your steps, checks your assertions, saves a screenshot + replay bundle.
+- **Catch a11y regressions before merge.** `/audit-a11y` runs axe-core against WCAG-A / AA / AAA and returns issues grouped by severity, with WCAG references and fix links.
+- **Lock down the visual contract.** `/visual-diff` captures a screenshot and compares against a named baseline under `./.rolepod-mcp/baselines/`. First call seeds; subsequent calls diff.
+- **Turn an interactive verify run into a real test file.** `/scaffold-e2e` transcribes a replay bundle into Playwright Test, Vitest+Playwright, or pytest+selenium.
+- **Reproduce + minimize a bug deterministically.** `/verify-ui` with `mode: "reproduce"` runs ddmin step-elimination to find the shortest still-reproducing sequence.
 
-## What v0.3 ships
+## The four skills
 
-| Layer | Surface |
-|---|---|
-| Plugin manifest | `.claude-plugin/plugin.json` (auto-discovers skills + spawns the MCP server) |
-| Shipped skills | `/verify-ui`, `/audit-a11y`, `/visual-diff`, `/scaffold-e2e` (single-backend, no fallback — D-024) |
-| Composite tools (5) | `rolepod_verify_ui_flow` (mode `assert` + `reproduce` with step minimization), `rolepod_audit_a11y`, `rolepod_visual_diff`, `rolepod_scaffold_e2e`, `rolepod_extract_ui_state` (internal) |
-| Atomic tools (10) | `rolepod_browser_open` / `_close` / `_snapshot` / `_click` / `_type` / `_key` / `_scroll` / `_wait_for` / `_screenshot` / `_navigate` |
-| Engine | `PlaywrightEngine` (web — Chromium default, Firefox + WebKit per session) + `AppiumEngine` (iOS XCUITest / Android UIAutomator2) |
-| CLI subcommands | `serve` (default), `doctor`, `install:mobile`, `replay <bundle.json>`, `--version`, `--help` |
-| Artifacts | `./.rolepod-mcp/artifacts/{run_id}/` (D-026) + `./.rolepod-mcp/baselines/` for visual diff |
-| CLI entry | `bin/rolepod-mcp` (stdio MCP transport) |
-| Schema export | `dist/schemas/tools.json` (`npm run build:schemas`) |
+| Skill | Wraps | What it does |
+|---|---|---|
+| `/verify-ui` | `rolepod_verify_ui_flow` | Drive a session through steps, evaluate assertions, save evidence + replay bundle. `mode: assert` (default) or `reproduce` with optional ddmin minimization. |
+| `/audit-a11y` | `rolepod_audit_a11y` | axe-core audit at WCAG-A / AA / AAA. `scope: "page"` or `scope: { ref }`. Markdown or JSON report. |
+| `/visual-diff` | `rolepod_visual_diff` | Pixel diff against a named baseline. Auto-seeds on first call. Configurable threshold + pixelmatch sensitivity. |
+| `/scaffold-e2e` | `rolepod_scaffold_e2e` | Generate a runnable test file from a scenario + optional replay bundle. Three target frameworks. |
 
-Out of scope for v0.3 (still deferred): SeleniumEngine (v0.4 — needs
-a Selenium grid to verify), Docker image, public docs site
-(`docs/` ships markdown only; no Astro build).
+Every skill is **single-backend** (D-024) — it calls the rolepod-mcp server and only the rolepod-mcp server. If the server is unavailable, the skill fails with a clear diagnostic. Multi-backend routing belongs in the parent [`rolepod`](https://github.com/nuttaruj/rolepod) plugin's phase skills, not here.
 
----
+## Install
 
-## Install (local development)
+Pick your CLI. All install paths share the same MCP server (`@rolepod/mcp` on npm) and the same skill set.
+
+### Claude Code (recommended)
 
 ```bash
-git clone <repo-url> rolepod-mcp
-cd rolepod-mcp
-npm install
-npx playwright install chromium
-npm run build
+# Install
+claude plugin marketplace add nuttaruj/rolepod-mcp
+claude plugin install rolepod-mcp@rolepod-mcp
+
+# Update
+claude plugin marketplace update rolepod-mcp
+claude plugin install rolepod-mcp@rolepod-mcp
+
+# Uninstall
+claude plugin uninstall rolepod-mcp@rolepod-mcp
+claude plugin marketplace remove rolepod-mcp
 ```
 
-Test (vitest smoke + lint, 32 tests):
+The plugin auto-registers the four `/verify-ui` / `/audit-a11y` / `/visual-diff` / `/scaffold-e2e` skills AND spawns the MCP server (`npx -y @rolepod/mcp`) on session start.
+
+### Cursor IDE
+
+Cursor's plugin marketplace is enterprise-only (Free / Pro plans cannot install marketplace plugins). For everyone else, drop the workspace MCP config:
 
 ```bash
-npm test
+# Per project — copy from this repo, or run:
+mkdir -p .cursor
+curl -fsSL https://raw.githubusercontent.com/nuttaruj/rolepod-mcp/main/.cursor/mcp.json -o .cursor/mcp.json
+
+# Or global (across every project)
+mkdir -p ~/.cursor
+curl -fsSL https://raw.githubusercontent.com/nuttaruj/rolepod-mcp/main/.cursor/mcp.json -o ~/.cursor/mcp.json
 ```
 
-Manual MCP-protocol smoke (spawns the stdio server, lists every tool):
+Then **fully restart Cursor** — MCP servers load only at startup. Verify under **Settings → MCP**.
 
-```bash
-npm run smoke:mcp
-```
+Skills are not auto-registered under Cursor (no unified plugin format for skills + MCP in one). The MCP tools are still available; invoke them by name in chat (`Use rolepod_verify_ui_flow to …`).
 
----
-
-## Use as a Claude Code plugin
-
-The plugin manifest declares the MCP server entry — Claude Code spawns
-it on plugin load:
-
-```json
-"mcpServers": {
-  "rolepod-mcp": {
-    "command": "npx",
-    "args": ["-y", "@rolepod/mcp"]
-  }
-}
-```
-
-For local development before the first npm publish, override the manifest
-to point at the locally-built binary:
-
-```json
-"mcpServers": {
-  "rolepod-mcp": {
-    "command": "node",
-    "args": ["<absolute-path>/dist/bin/rolepod-mcp.js"]
-  }
-}
-```
-
-Skills under `skills/` are auto-discovered by Claude Code's plugin loader
-([reference](https://code.claude.com/docs/en/plugins-reference)) — no
-explicit `skills:` array is needed in `plugin.json`.
-
-### Cursor
-
-Drop `.cursor/mcp.json` (shipped in this repo) into your project, or
-copy it to `~/.cursor/mcp.json` for the user-level install. Cursor's
-MCP config schema is documented at
-[cursor.com/docs/mcp](https://cursor.com/docs/mcp). Then fully restart
-Cursor — MCP servers load only at startup.
-
-Cursor does not yet have a unified plugin format that bundles skills,
-so the four `/verify-ui` / `/audit-a11y` / `/visual-diff` /
-`/scaffold-e2e` skills are not auto-installed under Cursor. They are
-available as plain markdown under `skills/` for manual reference.
+> **Teams / Enterprise:** add `https://github.com/nuttaruj/rolepod-mcp` as a team marketplace under **Settings → Plugins** for one-click install with skills auto-registered.
 
 ### Codex CLI
 
-`.codex-plugin/plugin.json` follows the Codex CLI plugin convention
-(`skills`, `hooks`, `mcp_servers`, plus an `interface` block). Install
-via the Codex plugin loader; see Codex docs for the latest path.
+```bash
+# Install
+codex plugin marketplace add nuttaruj/rolepod-mcp
+codex plugin install rolepod-mcp@rolepod-mcp
+
+# Update
+codex plugin marketplace upgrade rolepod-mcp
+codex plugin install rolepod-mcp@rolepod-mcp
+```
+
+Codex reads the plugin from `.agents/plugins/marketplace.json` + `.codex-plugin/plugin.json` in this repo. Skills install to `~/.codex/skills/` (Codex's plugin loader handles registration).
 
 ### Gemini CLI
 
-Not yet shipped. Brief `11-plugin-skills.md` defers the Gemini manifest
-until the official Gemini CLI plugin schema is verified.
+Not yet shipped. The Gemini extension format is not yet stable enough to commit to; we plan to add `gemini-extension.json` in v0.4. Track [issue #N](https://github.com/nuttaruj/rolepod-mcp/issues) if you need it.
+
+### Direct npm (any MCP-aware tool)
+
+Use this when your tool reads a standard `mcpServers` config (most non-CLI MCP clients):
+
+```json
+{
+  "mcpServers": {
+    "rolepod-mcp": {
+      "command": "npx",
+      "args": ["-y", "@rolepod/mcp"]
+    }
+  }
+}
+```
+
+15 MCP tools (`rolepod_browser_*` + `rolepod_verify_ui_flow` + 4 composites) will appear in your client. Skills are not surfaced via this path — call the tools by name.
+
+## Quick start
+
+After install, in your Claude Code / Cursor / Codex session:
+
+```
+/verify-ui https://example.com
+  steps: []
+  expect: text_visible "Example Domain", text_visible "Learn more"
+```
+
+Returns a `run_id`, `passed: true`, and a path under `./.rolepod-mcp/artifacts/verify_<run_id>/`:
+
+```
+.rolepod-mcp/artifacts/verify_20260524T101512_a1b2c3d4/
+├── final.png            screenshot at end of run
+└── replay.json          replay bundle — re-runnable via `npx rolepod-mcp replay …`
+```
+
+Convert that to a Playwright Test file:
+
+```
+/scaffold-e2e from .rolepod-mcp/artifacts/verify_…/replay.json using playwright-test
+```
+
+## Verify your setup
+
+```bash
+npx rolepod-mcp doctor
+```
+
+```
+✓ Node ≥20                       24.14.0
+✓ Playwright Chromium installed  ~/Library/Caches/ms-playwright
+✓ webdriverio (mobile client, v0.3)
+• Appium server (roadmap v0.3)   Not reachable at http://127.0.0.1:4723/status
+✓ Xcode (iOS, roadmap v0.3)      /Applications/Xcode.app
+• Android SDK (roadmap v0.3)     Set ANDROID_HOME — needed only for Android
+• SeleniumEngine (roadmap v0.4)  Not implemented — deferred to v0.4
+✓ Artifact root writable
+```
+
+`✓` = ready · `•` = optional / deferred · `✗` = blocker.
+
+## What's inside
+
+- **15 MCP tools** — 10 atomic browser/mobile primitives (`browser_open`, `_close`, `_snapshot`, `_click`, `_type`, `_key`, `_scroll`, `_wait_for`, `_screenshot`, `_navigate`) + 5 composites (`verify_ui_flow`, `audit_a11y`, `visual_diff`, `scaffold_e2e`, `extract_ui_state`). All prefixed `rolepod_*` to namespace away from other MCP servers.
+- **2 engines behind one interface** — `PlaywrightEngine` for web (Chromium / Firefox / WebKit), `AppiumEngine` for iOS XCUITest + Android UIAutomator2. The Lead sees one unified `A11yNode` shape regardless of platform.
+- **Stable refs with explicit invalidation (D-010)** — every state-changing call invalidates prior refs; the engine returns a structured `stale_ref` error if you try to reuse one. No silent locator drift.
+- **Replay bundles** — every `/verify-ui` run writes a JSON replay you can re-run later with `npx rolepod-mcp replay <bundle.json>`, agent-free.
+- **No internal LLM (D-004)** — your Lead agent makes every decision. We don't double-bill you for inference.
+
+## Use with parent rolepod
+
+If you also use [`rolepod`](https://github.com/nuttaruj/rolepod) (the markdown plugin), its `check-work`, `debug-issue`, and `review-code` skills auto-route to `/verify-ui`, `/audit-a11y`, and `/visual-diff` when the rolepod-mcp server is present. Nothing breaks if it isn't — parent falls back to Playwright MCP / Chrome DevTools MCP / manual verification.
+
+The two are **independent**: install rolepod-mcp standalone and get a complete experience via slash commands, or install both together and let parent's phase router pick the right backend automatically.
+
+## Docs
+
+- [docs/sessions.md](docs/sessions.md) — session lifecycle, stale-ref semantics, multi-session
+- [docs/artifacts.md](docs/artifacts.md) — `.rolepod-mcp/` layout, run_id convention, replay bundle format
+- [docs/recipes/](docs/recipes/) — `verify-a-checkout-flow`, `audit-a11y-during-review`, `visual-baseline-workflow`
+- [brief/](brief/) — full design brief: vision, architecture, tool surface, engine layer, decisions
+- [CHANGELOG.md](CHANGELOG.md) — release history with per-version "Not yet verified" notes mapped to milestones
+- [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
 
 ---
 
-## Schema export
-
-After `npm run build`, `dist/schemas/tools.json` contains the
-JSON-Schema 2019-09 definition for every `rolepod_*` tool. Consumers can
-import this directly (e.g. for type generation, agent prompts, or
-documentation).
-
----
-
-## License
-
-MIT — see [`LICENSE`](LICENSE).
-
-Third-party attributions in [`THIRD_PARTY.md`](THIRD_PARTY.md), including
-the future alumnium driver fork (D-005), `@axe-core/playwright`
-(MPL-2.0), and the visual-diff stack (`pixelmatch` ISC + `pngjs` MIT).
-
----
-
-## Design brief + changelog
-
-- Architectural decisions: [`brief/`](brief/) — start at
-  [`brief/00-INDEX.md`](brief/00-INDEX.md).
-- Release history: [`CHANGELOG.md`](CHANGELOG.md).
+MIT licensed — see [LICENSE](LICENSE) and [THIRD_PARTY.md](THIRD_PARTY.md). Mobile AT normalizers are alumnium-inspired ([UPSTREAM_TRACKING.md](UPSTREAM_TRACKING.md)). Feedback + runtime reports for Cursor / Codex / Gemini install paths especially welcome via [issues](https://github.com/nuttaruj/rolepod-mcp/issues).
