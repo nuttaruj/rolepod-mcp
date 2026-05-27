@@ -62,6 +62,15 @@ upstream Selenium has no network-capture primitive.
 3. Print the generated file path and the setup steps. Surface
    `dependencies` as an install command.
 
+## Evidence routing
+
+Run artifacts (the generated test file) are saved under:
+
+- **Standalone:** `.rolepod-uiproof/artifacts/<prefix>_<ts>_<uuid>/`
+- **With `rolepod` parent** (when `ROLEPOD_PARENT=1` is set by the parent's SessionStart hook): `.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/`
+
+Either way the run directory contains a `manifest.json` per Extension Protocol v1 (with `phase: "build"` for this skill).
+
 ## If the tool is unavailable
 
 Surface plainly:

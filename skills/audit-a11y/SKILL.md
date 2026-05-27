@@ -43,6 +43,15 @@ MCP server. No fallback (D-024).
 3. Surface counts + critical/serious issues inline; reference the report
    path for the full list.
 
+## Evidence routing
+
+Run artifacts are saved under:
+
+- **Standalone:** `.rolepod-uiproof/artifacts/<prefix>_<ts>_<uuid>/`
+- **With `rolepod` parent** (when `ROLEPOD_PARENT=1` is set by the parent's SessionStart hook): `.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/`
+
+Either way the run directory contains a `manifest.json` per Extension Protocol v1, so the parent's `check-work` skill can aggregate results into the verify phase report. Standalone users can read the manifest themselves — same shape.
+
 ## If the tool is unavailable
 
 Surface plainly:

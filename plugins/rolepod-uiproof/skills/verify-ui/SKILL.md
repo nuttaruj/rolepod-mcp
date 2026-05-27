@@ -110,6 +110,15 @@ For ANY user-visible flow, default-include `no_console_errors` and
 `no_failed_requests` in `expect`. Real UI bugs surface as console errors
 or 5xx responses far more often than as wrong text.
 
+## Evidence routing
+
+Run artifacts are saved under:
+
+- **Standalone:** `.rolepod-uiproof/artifacts/<prefix>_<ts>_<uuid>/`
+- **With `rolepod` parent** (when `ROLEPOD_PARENT=1` is set by the parent's SessionStart hook): `.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/`
+
+Either way the run directory contains a `manifest.json` per Extension Protocol v1, so the parent's `check-work` skill can aggregate results into the verify phase report. Standalone users can read the manifest themselves — same shape.
+
 ## If the tool is unavailable
 
 > The `/verify-ui` skill needs the **rolepod-uiproof** MCP server, which is

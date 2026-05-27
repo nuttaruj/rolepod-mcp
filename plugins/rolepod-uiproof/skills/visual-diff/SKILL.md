@@ -44,6 +44,15 @@ MCP server. No fallback (D-024).
 3. Report `diff_pct`, `passed`, and the three image paths. If the baseline
    was just seeded, say so explicitly.
 
+## Evidence routing
+
+Run artifacts are saved under:
+
+- **Standalone:** `.rolepod-uiproof/artifacts/<prefix>_<ts>_<uuid>/`
+- **With `rolepod` parent** (when `ROLEPOD_PARENT=1` is set by the parent's SessionStart hook): `.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/`
+
+Baselines under `.rolepod-uiproof/baselines/` are always the same location regardless of mode — they are user-curated config, not per-run evidence. Either way the run directory contains a `manifest.json` per Extension Protocol v1.
+
 ## If the tool is unavailable
 
 Surface plainly:
