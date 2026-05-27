@@ -7,6 +7,75 @@ release.
 
 ## [Unreleased]
 
+## [0.6.0] — 2026-05-27
+
+**Extension Protocol v1 — `uiproof` becomes parent-aware. Standalone
+behavior unchanged.**
+
+When the parent `rolepod` plugin (v2.7+) sets `ROLEPOD_PARENT=1` via
+its SessionStart hook, uiproof routes evidence to the shared
+`.rolepod/evidence/` tree and emits a `manifest.json` per spec so the
+parent's `check-work` skill can aggregate UI verify results into its
+phase report. With no parent installed the v0.5 behavior is preserved
+exactly — same artifact path, same tool output, plus a `manifest.json`
+in each run dir as a bonus.
+
+### Added
+
+- **Env-aware evidence path** in `ArtifactStore`. Detected at
+  construction from `process.env.ROLEPOD_PARENT === "1"`.
+  - standalone: `.rolepod-uiproof/artifacts/{prefix}_{ts}_{uuid}/`
+  - with-parent: `.rolepod/evidence/{ts}-rolepod-uiproof-{skill}/`
+- **`manifest.json`** written by every composite that starts a run
+  (`verify_ui_flow`, `audit_a11y`, `visual_diff`, `scaffold_e2e`).
+  Schema follows Extension Protocol v1: `protocol`, `plugin`, `skill`,
+  `phase`, `status`, `summary`, `started_at`, `finished_at`,
+  `artifacts: [{type, path}]`, `metadata`. Best-effort: any IO failure
+  is logged but never thrown.
+- **Graduated a11y status**. `audit_a11y` manifest carries `status`:
+  `critical/serious > 0 → fail`, `moderate/minor > 0 → warn`, no
+  issues → `pass`. Keeps the `warn` signal a strict pass/fail would
+  discard.
+- **Protocol version check**. When `ROLEPOD_PROTOCOL` is set but
+  does not equal `v1`, `buildServer()` logs a one-shot warning. Does
+  not block; manifest is still written in v1 shape.
+- **`/check-errors` evidence routing doc** alongside the other 4
+  skills.
+
+### Changed
+
+- `ArtifactStore.startRun(prefix, opts?)` — `opts.skill` is new and
+  optional. Provides the canonical skill name for both the
+  with-parent dirname and the manifest's `skill` field. Return shape
+  extended with `skill` and `mode` (back-compat: existing destructuring
+  of `{ runId, runDir }` keeps working).
+- `buildServer()` log line surfaces `protocol: "v1"` and
+  `mode: "standalone" | "with-parent"` alongside the existing version
+  + tools list.
+- All 5 shipped skills' SKILL.md gained an "Evidence routing" section
+  between "Process" / "Outputs" and "If the tool is unavailable".
+  Mirrored to `plugins/rolepod-uiproof/skills/`.
+- README "Standalone vs Combined" section added explaining the two
+  modes.
+
+### Behavior
+
+- **Standalone:** unchanged. Evidence still written to
+  `.rolepod-uiproof/artifacts/`. New: a `manifest.json` appears in each
+  run dir. Tool return values gain an optional `manifest: "<path>"`
+  field; everything else is byte-for-byte identical.
+- **With rolepod parent:** evidence written to
+  `.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/` with `manifest.json`
+  per protocol spec. Visual baselines stay in
+  `.rolepod-uiproof/baselines/` regardless of mode.
+
+### Non-goals (kept out of v0.6)
+
+- Dynamic capabilities registry (`.claude-plugin/capabilities.json`)
+- Protocol version negotiation beyond a single warn
+- Cross-child coordination (uiproof ↔ wplab handoff inside one run)
+- Mobile platform support stays at the v0.5 partial level
+
 ## [0.5.0] — 2026-05-27
 
 **Complete UI verification surface — one MCP replaces chrome-devtools-mcp

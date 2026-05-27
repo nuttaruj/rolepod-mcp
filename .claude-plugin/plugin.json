@@ -1,7 +1,7 @@
 {
   "name": "rolepod-uiproof",
-  "version": "0.5.0",
-  "description": "Multi-platform UI/mobile automation for AI agents — 5 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e, check-errors) + MCP server with 26 tools. v0.5 completes the UI verification surface: console + network observability, hover/drag/fill_form/upload/dialog, runtime emulation, multi-page support, gated JS eval — replacing chrome-devtools-mcp and playwright-mcp for UI testing.",
+  "version": "0.6.0",
+  "description": "Multi-platform UI/mobile automation for AI agents — 5 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e, check-errors) + MCP server with 26 tools. Works standalone OR with the `rolepod` parent plugin: when ROLEPOD_PARENT=1 is set, evidence routes to `.rolepod/evidence/` with a `manifest.json` per Extension Protocol v1, so parent's `check-work` skill can aggregate UI verify results into its phase report. v0.5 completed the UI verification surface (console + network observability, hover/drag/fill_form/upload/dialog, runtime emulation, multi-page, gated JS eval).",
   "author": {
     "name": "nuttaruj",
     "url": "https://github.com/nuttaruj"

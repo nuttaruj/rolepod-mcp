@@ -33,7 +33,7 @@ import type { ToolContext } from "./tools/types.js";
 import { log } from "./util/log.js";
 
 export const SERVER_NAME = "rolepod-uiproof";
-export const SERVER_VERSION = "0.5.0";
+export const SERVER_VERSION = "0.6.0";
 
 /**
  * Extension Protocol version this build implements. Compared against the

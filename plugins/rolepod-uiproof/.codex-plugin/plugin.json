@@ -1,7 +1,7 @@
 {
   "name": "rolepod-uiproof",
-  "version": "0.5.0",
-  "description": "Multi-platform UI/mobile automation for AI agents — 5 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e, check-errors) + MCP server with 26 tools. v0.5 completes the UI verification surface: console + network observability, hover/drag/fill_form/upload/dialog, runtime emulation, multi-page, gated JS eval.",
+  "version": "0.6.0",
+  "description": "Multi-platform UI/mobile automation for AI agents — 5 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e, check-errors) + MCP server with 26 tools. v0.6 adds Extension Protocol v1 — works standalone today, becomes the verify-phase UI provider when paired with the `rolepod` parent plugin.",
   "author": {
     "name": "nuttaruj",
     "url": "https://github.com/nuttaruj"
@@ -25,7 +25,7 @@
   "interface": {
     "displayName": "Rolepod UIProof",
     "shortDescription": "UI verification, a11y audits, visual diff, e2e scaffolding — for AI coding agents.",
-    "longDescription": "rolepod-uiproof ships an MCP server with 26 tools (21 atomic + 5 composite) and 5 user-invocable skills (/verify-ui, /audit-a11y, /visual-diff, /scaffold-e2e, /check-errors). Web is fully supported via Playwright; mobile (iOS/Android via Appium) supports basic input. v0.5 completes the UI verification surface.",
+    "longDescription": "rolepod-uiproof ships an MCP server with 26 tools (21 atomic + 5 composite) and 5 user-invocable skills (/verify-ui, /audit-a11y, /visual-diff, /scaffold-e2e, /check-errors). Web is fully supported via Playwright; mobile (iOS/Android via Appium) supports basic input. v0.6: pair with the `rolepod` parent plugin (v2.7+) and uiproof becomes the verify-phase UI provider — evidence routes to `.rolepod/evidence/` with a `manifest.json` per Extension Protocol v1.",
     "developerName": "nuttaruj",
     "category": "Productivity",
     "capabilities": ["Read", "Write", "Bash"],

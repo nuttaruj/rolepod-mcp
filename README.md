@@ -27,6 +27,21 @@ One MCP server, one tool surface, five skills you invoke from chat. Web is produ
 
 Every skill is **single-backend** (D-024) — it calls the rolepod-uiproof server and only the rolepod-uiproof server. If the server is unavailable, the skill fails with a clear diagnostic. Multi-backend routing belongs in the parent [`rolepod`](https://github.com/nuttaruj/rolepod) plugin's phase skills, not here.
 
+## Standalone vs Combined
+
+`rolepod-uiproof` works either as a **standalone** browser MCP for any project, or **combined** with the [`rolepod`](https://github.com/nuttaruj/rolepod) parent plugin (v2.7+) where it becomes the Verify phase provider for UI artifacts.
+
+**Standalone** (default): use the 5 skills directly as atomic browser tools. Evidence saved under `./.rolepod-uiproof/artifacts/<run>/` with a `manifest.json` per Extension Protocol v1.
+
+**Combined with rolepod parent**: when the parent's SessionStart hook sets `ROLEPOD_PARENT=1`, uiproof writes evidence to `./.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/` instead, where parent's `check-work` skill auto-aggregates manifests into the verify report. No skill changes — same 26 tools, same 5 skills, smarter routing.
+
+| Install | Unlocks |
+|---|---|
+| uiproof alone | Browser test, a11y audit, visual diff, e2e scaffold, error gate |
+| uiproof + rolepod parent | + verify-phase aggregation, evidence handoff to `check-work` |
+
+The `manifest.json` is written in BOTH modes, so installing the parent later still lets historic artifacts get picked up. Baselines for `/visual-diff` always live in `./.rolepod-uiproof/baselines/` regardless of mode — they are user-curated configuration, not per-run evidence.
+
 ## Install
 
 Pick your CLI. All install paths share the same MCP server (`@rolepod/uiproof` on npm) and the same skill set.
