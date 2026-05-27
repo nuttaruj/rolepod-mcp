@@ -7,6 +7,28 @@ release.
 
 ## [Unreleased]
 
+## [0.4.1] — 2026-05-27
+
+### Fixed
+
+- **MCP server failed to start via `npx -y @rolepod/uiproof`** — npx
+  resolves a scoped package's default executable by the *short* name
+  (`uiproof`, after the `/`), but our `bin` field only defined
+  `rolepod-uiproof`. The mismatch caused `sh: rolepod-uiproof: command
+  not found` and an MCP `-32000` reconnect error in Claude Code,
+  Cursor, etc. All `mcpServers` entries (`.mcp.json`, `.cursor/mcp.json`,
+  `.claude-plugin/plugin.json`, `plugins/rolepod-uiproof/.mcp.json`)
+  now invoke `npx -y rolepod-uiproof`, which npx resolves directly by
+  bin name from the registry.
+
+### Added
+
+- Tool `title` and `annotations` (`readOnlyHint` / `destructiveHint` /
+  `idempotentHint` / `openWorldHint`) on all 15 tools, per the MCP
+  2025-11-25 spec. Clients use these hints to render friendlier names
+  in the picker and to auto-approve read-only calls vs. prompting
+  harder on destructive ones.
+
 ## [0.4.0] — 2026-05-24
 
 **Breaking: project renamed `rolepod-mcp` → `rolepod-uiproof`.**

@@ -81,7 +81,7 @@ this plainly:
 
 > The `/verify-ui` skill needs the **rolepod-uiproof** MCP server, which is
 > not currently available. Confirm the plugin is installed and try again,
-> or check that `npx -y @rolepod/uiproof` is reachable.
+> or check that `npx -y rolepod-uiproof` is reachable.
 
 Do **not** attempt this work via Playwright MCP, Chrome DevTools MCP, or
 any other backend from inside this skill. Multi-backend routing is the

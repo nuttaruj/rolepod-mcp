@@ -22,7 +22,7 @@ import type { ToolContext } from "./tools/types.js";
 import { log } from "./util/log.js";
 
 export const SERVER_NAME = "rolepod-uiproof";
-export const SERVER_VERSION = "0.4.0";
+export const SERVER_VERSION = "0.4.1";
 
 export type ServerHandle = {
   mcp: McpServer;
