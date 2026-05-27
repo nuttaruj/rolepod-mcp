@@ -52,7 +52,7 @@ const names = (listResp.result?.tools ?? []).map((t) => t.name);
 console.log("[tools]", names.join(", "));
 
 const expected = [
-  // atomic (10)
+  // atomic (10 — v0.1-v0.4)
   "rolepod_browser_open",
   "rolepod_browser_close",
   "rolepod_browser_snapshot",
@@ -63,6 +63,18 @@ const expected = [
   "rolepod_browser_wait_for",
   "rolepod_browser_screenshot",
   "rolepod_browser_navigate",
+  // atomic (11 — v0.5)
+  "rolepod_browser_hover",
+  "rolepod_browser_drag",
+  "rolepod_browser_fill_form",
+  "rolepod_browser_upload_file",
+  "rolepod_browser_handle_dialog",
+  "rolepod_browser_console",
+  "rolepod_browser_network",
+  "rolepod_browser_set_env",
+  "rolepod_browser_evaluate",
+  "rolepod_browser_pages",
+  "rolepod_browser_switch_page",
   // composite (5)
   "rolepod_verify_ui_flow",
   "rolepod_audit_a11y",

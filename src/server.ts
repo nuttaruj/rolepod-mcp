@@ -4,13 +4,24 @@ import { createMobileEngine, createWebEngine } from "./engine/factory.js";
 import { SessionRegistry } from "./session/SessionRegistry.js";
 import { browserClickTool } from "./tools/atomic/browser_click.js";
 import { browserCloseTool } from "./tools/atomic/browser_close.js";
+import { browserConsoleTool } from "./tools/atomic/browser_console.js";
+import { browserDragTool } from "./tools/atomic/browser_drag.js";
+import { browserEvaluateTool } from "./tools/atomic/browser_evaluate.js";
+import { browserFillFormTool } from "./tools/atomic/browser_fill_form.js";
+import { browserHandleDialogTool } from "./tools/atomic/browser_handle_dialog.js";
+import { browserHoverTool } from "./tools/atomic/browser_hover.js";
 import { browserKeyTool } from "./tools/atomic/browser_key.js";
 import { browserNavigateTool } from "./tools/atomic/browser_navigate.js";
+import { browserNetworkTool } from "./tools/atomic/browser_network.js";
 import { browserOpenTool } from "./tools/atomic/browser_open.js";
+import { browserPagesTool } from "./tools/atomic/browser_pages.js";
 import { browserScreenshotTool } from "./tools/atomic/browser_screenshot.js";
 import { browserScrollTool } from "./tools/atomic/browser_scroll.js";
+import { browserSetEnvTool } from "./tools/atomic/browser_set_env.js";
 import { browserSnapshotTool } from "./tools/atomic/browser_snapshot.js";
+import { browserSwitchPageTool } from "./tools/atomic/browser_switch_page.js";
 import { browserTypeTool } from "./tools/atomic/browser_type.js";
+import { browserUploadFileTool } from "./tools/atomic/browser_upload_file.js";
 import { browserWaitForTool } from "./tools/atomic/browser_wait_for.js";
 import { auditA11yTool } from "./tools/composite/audit_a11y.js";
 import { extractUiStateTool } from "./tools/composite/extract_ui_state.js";
@@ -61,7 +72,7 @@ export function buildServer(
   });
 
   const tools = [
-    // atomic
+    // atomic (v0.1-v0.4)
     browserOpenTool,
     browserCloseTool,
     browserSnapshotTool,
@@ -72,6 +83,18 @@ export function buildServer(
     browserWaitForTool,
     browserScreenshotTool,
     browserNavigateTool,
+    // atomic (v0.5)
+    browserHoverTool,
+    browserDragTool,
+    browserFillFormTool,
+    browserUploadFileTool,
+    browserHandleDialogTool,
+    browserConsoleTool,
+    browserNetworkTool,
+    browserSetEnvTool,
+    browserEvaluateTool,
+    browserPagesTool,
+    browserSwitchPageTool,
     // composite
     verifyUiFlowTool,
     auditA11yTool,
