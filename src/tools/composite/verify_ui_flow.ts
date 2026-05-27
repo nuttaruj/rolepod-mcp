@@ -152,7 +152,7 @@ async function runFlow(
     const failures: string[] = [];
     for (let i = 0; i < args.expect.length; i++) {
       const expectation = args.expect[i]!;
-      if (!evaluateExpect(expectation, finalSnapshot)) {
+      if (!evaluateExpect(expectation, finalSnapshot, engine, session.id)) {
         failures.push(`expect[${i}] ${describeExpect(expectation)}`);
       }
     }
@@ -365,12 +365,111 @@ async function runStep(
     case "navigate":
       await engine.navigate(session, step.url);
       return;
+    case "hover": {
+      const ref = findRefByQuery(snap.tree, step.query);
+      if (!ref) throw missingQuery(step.query);
+      await engine.hover(session, ref);
+      return;
+    }
+    case "drag": {
+      const fromRef = findRefByQuery(snap.tree, step.from_query);
+      if (!fromRef) throw missingQuery(step.from_query);
+      const toRef = findRefByQuery(snap.tree, step.to_query);
+      if (!toRef) throw missingQuery(step.to_query);
+      await engine.drag(session, fromRef, toRef);
+      return;
+    }
+    case "fill_form": {
+      const resolved = step.fields.map((f) => {
+        const ref = findRefByQuery(snap.tree, f.query);
+        if (!ref) throw missingQuery(f.query);
+        return f.kind !== undefined
+          ? { ref, value: f.value, kind: f.kind }
+          : { ref, value: f.value };
+      });
+      await engine.fillForm(session, resolved);
+      return;
+    }
+    case "upload": {
+      const ref = findRefByQuery(snap.tree, step.query);
+      if (!ref) throw missingQuery(step.query);
+      await engine.uploadFile(session, ref, step.file_path);
+      return;
+    }
+    case "dialog": {
+      requirePlaywright(engine, "dialog");
+      // Fire and forget — the next step (the dialog trigger) will resolve
+      // the handler. We register synchronously inside handleDialog.
+      void engine
+        .handleDialog(session.id, {
+          action: step.action,
+          ...(step.text !== undefined ? { text: step.text } : {}),
+        })
+        .catch(() => undefined);
+      return;
+    }
+    case "set_env": {
+      requirePlaywright(engine, "set_env");
+      await engine.setEnv(session.id, {
+        ...(step.viewport !== undefined ? { viewport: step.viewport } : {}),
+        ...(step.offline !== undefined ? { offline: step.offline } : {}),
+        ...(step.geolocation !== undefined
+          ? { geolocation: step.geolocation }
+          : {}),
+        ...(step.color_scheme !== undefined
+          ? { colorScheme: step.color_scheme }
+          : {}),
+        ...(step.reduced_motion !== undefined
+          ? { reducedMotion: step.reduced_motion }
+          : {}),
+        ...(step.extra_headers !== undefined
+          ? { extraHeaders: step.extra_headers }
+          : {}),
+        ...(step.network_throttle !== undefined
+          ? { networkThrottle: step.network_throttle }
+          : {}),
+        ...(step.cpu_throttle !== undefined
+          ? { cpuThrottle: step.cpu_throttle }
+          : {}),
+      });
+      return;
+    }
+    case "switch_page": {
+      requirePlaywright(engine, "switch_page");
+      await engine.switchPage(session.id, step.index);
+      return;
+    }
+    case "evaluate": {
+      requirePlaywright(engine, "evaluate");
+      if (process.env.ROLEPOD_ALLOW_EVAL !== "1") {
+        throw new RolepodMcpError(
+          "engine_error",
+          "verify_ui_flow step kind 'evaluate' is disabled. Restart the rolepod-uiproof MCP server with ROLEPOD_ALLOW_EVAL=1 to enable.",
+        );
+      }
+      await engine.evaluate(session.id, step.script);
+      return;
+    }
+  }
+}
+
+function requirePlaywright(
+  engine: Engine,
+  stepKind: string,
+): asserts engine is PlaywrightEngine {
+  if (!(engine instanceof PlaywrightEngine)) {
+    throw new RolepodMcpError(
+      "unsupported_engine",
+      `verify_ui_flow step kind "${stepKind}" is web-only and requires PlaywrightEngine.`,
+    );
   }
 }
 
 function evaluateExpect(
   exp: VerifyUiFlowInput["expect"][number],
   snap: A11ySnapshot,
+  engine: Engine,
+  sessionId: string,
 ): boolean {
   switch (exp.kind) {
     case "text_visible":
@@ -391,15 +490,51 @@ function evaluateExpect(
           return node.state?.focused === true;
       }
     }
-    // v0.5 — observed-state expects. Wired up in C6.
-    case "no_console_errors":
-    case "no_failed_requests":
-    case "request_made":
-    case "response_status":
-      throw new RolepodMcpError(
-        "engine_error",
-        `expect kind "${exp.kind}" requires v0.5 observability wiring (pending C6).`,
+    case "no_console_errors": {
+      if (!(engine instanceof PlaywrightEngine)) return true; // mobile = no console
+      const msgs = engine.peekBuffers(sessionId).console.filter(
+        (m) => m.level === "error",
       );
+      const excludes = exp.exclude_patterns ?? [];
+      const remaining = msgs.filter(
+        (m) => !excludes.some((p) => m.text.includes(p)),
+      );
+      return remaining.length === 0;
+    }
+    case "no_failed_requests": {
+      if (!(engine instanceof PlaywrightEngine)) return true;
+      const reqs = engine.peekBuffers(sessionId).network.filter((r) => {
+        if (r.failure) return true;
+        if (r.status === undefined) return false;
+        if (exp.allow_4xx) return r.status >= 500;
+        return r.status >= 400;
+      });
+      const excludes = exp.exclude_patterns ?? [];
+      const remaining = reqs.filter(
+        (r) => !excludes.some((p) => r.url.includes(p)),
+      );
+      return remaining.length === 0;
+    }
+    case "request_made": {
+      if (!(engine instanceof PlaywrightEngine)) return false;
+      const re = new RegExp(exp.url_pattern);
+      const wantMethod = exp.method?.toUpperCase();
+      const matches = engine.peekBuffers(sessionId).network.filter((r) => {
+        if (!re.test(r.url)) return false;
+        if (wantMethod && r.method.toUpperCase() !== wantMethod) return false;
+        return true;
+      });
+      const min = exp.min_count ?? 1;
+      return matches.length >= min;
+    }
+    case "response_status": {
+      if (!(engine instanceof PlaywrightEngine)) return false;
+      const re = new RegExp(exp.url_pattern);
+      const match = engine
+        .peekBuffers(sessionId)
+        .network.find((r) => re.test(r.url) && r.status === exp.status);
+      return match !== undefined;
+    }
   }
 }
 
