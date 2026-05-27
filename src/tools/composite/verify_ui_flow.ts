@@ -35,7 +35,7 @@ export const verifyUiFlowTool: ToolModule<typeof verifyUiFlowShape> = {
   inputShape: verifyUiFlowShape,
   build(ctx) {
     return safeHandler(async (args: VerifyUiFlowInput) => {
-      const { runId, runDir } = await ctx.store.startRun("verify");
+      const { runId, runDir } = await ctx.store.startRun("verify", { skill: "verify-ui" });
 
       const initial = await runFlow(ctx, args, args.steps, runDir, {
         captureEvidence: true,

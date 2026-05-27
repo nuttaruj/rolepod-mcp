@@ -36,7 +36,7 @@ export const auditA11yTool: ToolModule<typeof auditA11yShape> = {
   inputShape: auditA11yShape,
   build(ctx) {
     return safeHandler(async (args: AuditA11yInput) => {
-      const { runId, runDir } = await ctx.store.startRun("audit");
+      const { runId, runDir } = await ctx.store.startRun("audit", { skill: "audit-a11y" });
       const session = await ctx.registry.open(args.open);
       const engine = ctx.registry.engineFor(session.id);
       if (!(engine instanceof PlaywrightEngine)) {

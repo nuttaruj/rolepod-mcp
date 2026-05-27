@@ -20,7 +20,7 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
   inputShape: visualDiffShape,
   build(ctx) {
     return safeHandler(async (args: VisualDiffInput) => {
-      const { runId, runDir } = await ctx.store.startRun("vdiff");
+      const { runId, runDir } = await ctx.store.startRun("vdiff", { skill: "visual-diff" });
       const session = await ctx.registry.open({
         ...args.open,
         ...(args.viewport ? { viewport: args.viewport } : {}),

@@ -25,7 +25,7 @@ export const scaffoldE2eTool: ToolModule<typeof scaffoldE2eShape> = {
   inputShape: scaffoldE2eShape,
   build(ctx) {
     return safeHandler(async (args: ScaffoldE2eInput) => {
-      const { runId, runDir } = await ctx.store.startRun("scaffold");
+      const { runId, runDir } = await ctx.store.startRun("scaffold", { skill: "scaffold-e2e" });
       const slug = slugify(args.scenario_nl);
       const bundle = args.recorded_bundle
         ? await loadReplay(args.recorded_bundle)
