@@ -6,6 +6,11 @@ import {
   type AuditA11yInput,
 } from "../../schema/tools.js";
 import { RolepodMcpError } from "../../util/errors.js";
+import {
+  writeManifest,
+  type ManifestArtifact,
+  type ManifestStatus,
+} from "../../util/manifest.js";
 import { ok, safeHandler } from "../result.js";
 import type { ToolModule } from "../types.js";
 
@@ -36,7 +41,11 @@ export const auditA11yTool: ToolModule<typeof auditA11yShape> = {
   inputShape: auditA11yShape,
   build(ctx) {
     return safeHandler(async (args: AuditA11yInput) => {
-      const { runId, runDir } = await ctx.store.startRun("audit", { skill: "audit-a11y" });
+      const startedAt = new Date().toISOString();
+      const { runId, runDir, skill } = await ctx.store.startRun(
+        "audit",
+        { skill: "audit-a11y" },
+      );
       const session = await ctx.registry.open(args.open);
       const engine = ctx.registry.engineFor(session.id);
       if (!(engine instanceof PlaywrightEngine)) {
@@ -116,15 +125,66 @@ export const auditA11yTool: ToolModule<typeof auditA11yShape> = {
         }
       }
 
+      const counts = countBySeverity(issues);
+      const status = a11yStatus(counts);
+      const artifacts: ManifestArtifact[] = reportPath
+        ? [{ type: "report", path: reportPath }]
+        : [];
+      const manifestPath = await writeManifest({
+        runDir,
+        skill,
+        phase: "verify",
+        status,
+        summary: buildAuditSummary(args.level, counts, status),
+        startedAt,
+        finishedAt: new Date().toISOString(),
+        artifacts,
+        metadata: {
+          level: args.level,
+          scope: args.scope,
+          counts,
+          report_format: args.report_format,
+        },
+      });
+
       return ok({
         run_id: runId,
-        counts: countBySeverity(issues),
+        counts,
         issues,
         report_path: reportPath,
+        ...(manifestPath ? { manifest: manifestPath } : {}),
       });
     });
   },
 };
+
+/**
+ * Graduated status mapping for a11y audits — keeps `warn` signal that a
+ * strict pass/fail would discard.
+ *
+ *   critical + serious > 0  → fail   (blocking issues)
+ *   moderate + minor   > 0  → warn   (worth surfacing, not blocking)
+ *   no issues               → pass
+ */
+function a11yStatus(counts: Record<string, number>): ManifestStatus {
+  if ((counts.critical ?? 0) + (counts.serious ?? 0) > 0) return "fail";
+  if ((counts.moderate ?? 0) + (counts.minor ?? 0) > 0) return "warn";
+  return "pass";
+}
+
+function buildAuditSummary(
+  level: string,
+  counts: Record<string, number>,
+  status: ManifestStatus,
+): string {
+  const total =
+    (counts.critical ?? 0) +
+    (counts.serious ?? 0) +
+    (counts.moderate ?? 0) +
+    (counts.minor ?? 0);
+  if (status === "pass") return `${level}: 0 issues`;
+  return `${level}: ${total} issue(s) — critical=${counts.critical ?? 0}, serious=${counts.serious ?? 0}, moderate=${counts.moderate ?? 0}, minor=${counts.minor ?? 0}`;
+}
 
 function pickWcagRef(tags: string[]): string | undefined {
   return tags.find((t) => /^wcag\d/.test(t));
