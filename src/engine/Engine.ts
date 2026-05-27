@@ -31,6 +31,23 @@ export type OpenOptions = {
   app_package?: string;
   app_activity?: string;
   emulator?: string;
+  /**
+   * v0.5 capture lifecycle. Pass when the session needs HAR/video/trace
+   * recording. These MUST be requested at open time because Playwright
+   * wires recordHar/recordVideo at context creation.
+   */
+  capture?: {
+    har?: { path: string };
+    video?: { dir: string; sizeWidth?: number; sizeHeight?: number };
+    trace?: { artifactDir: string };
+  };
+};
+
+export type FillFieldKind = "input" | "select" | "checkbox" | "radio";
+export type FillField = {
+  ref: string;
+  value: string | boolean;
+  kind?: FillFieldKind;
 };
 
 /** Opaque session handle returned by `Engine.open`. */
@@ -83,4 +100,22 @@ export interface Engine {
   screenshot(session: Session, fullPage?: boolean): Promise<Buffer>;
   /** Web-only. Throws `unsupported_platform` on mobile sessions. */
   navigate(session: Session, url: string): Promise<void>;
+
+  // ---------------- v0.5 cross-platform input additions ----------------
+
+  /** Move pointer / hover over the element identified by `ref`. */
+  hover(session: Session, ref: string): Promise<void>;
+  /** Drag element `from` onto element `to`. */
+  drag(session: Session, fromRef: string, toRef: string): Promise<void>;
+  /**
+   * Batch-fill multiple form fields in a single call. Token-efficient
+   * alternative to a sequence of `type` calls; also handles checkboxes,
+   * radios, and `<select>` options.
+   */
+  fillForm(session: Session, fields: FillField[]): Promise<void>;
+  /**
+   * Attach a local file to the file input identified by `ref`.
+   * Path MUST be absolute on the host filesystem.
+   */
+  uploadFile(session: Session, ref: string, filePath: string): Promise<void>;
 }

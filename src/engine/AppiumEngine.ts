@@ -249,6 +249,48 @@ export class AppiumEngine implements Engine {
   }
 
   // -------------------------------------------------------------------------
+  // v0.5 cross-platform additions — mobile stubs.
+  // These ship as `not_implemented_in_v05` until the mobile gesture work lands.
+  // -------------------------------------------------------------------------
+
+  async hover(_session: Session, _ref: string): Promise<void> {
+    throw new RolepodMcpError(
+      "engine_error",
+      "hover is not yet implemented for mobile (Appium). Use long-press via custom gesture if needed.",
+    );
+  }
+
+  async drag(_session: Session, _fromRef: string, _toRef: string): Promise<void> {
+    throw new RolepodMcpError(
+      "engine_error",
+      "drag is not yet implemented for mobile (Appium). Use the W3C Actions API directly if needed.",
+    );
+  }
+
+  async fillForm(
+    session: Session,
+    fields: { ref: string; value: string | boolean; kind?: string }[],
+  ): Promise<void> {
+    // Naive port: iterate type() per field. select/checkbox/radio not
+    // applicable in native mobile in the same way; treat all as text input.
+    for (const f of fields) {
+      const v = typeof f.value === "boolean" ? String(f.value) : f.value;
+      await this.type(session, f.ref, v);
+    }
+  }
+
+  async uploadFile(
+    _session: Session,
+    _ref: string,
+    _filePath: string,
+  ): Promise<void> {
+    throw new RolepodMcpError(
+      "engine_error",
+      "upload_file is not supported on mobile (Appium).",
+    );
+  }
+
+  // -------------------------------------------------------------------------
   // Internals
   // -------------------------------------------------------------------------
 

@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { resolve as resolvePath, isAbsolute } from "node:path";
 import {
   chromium,
   firefox,
@@ -7,6 +8,10 @@ import {
   type BrowserContext,
   type Page,
   type Locator,
+  type ConsoleMessage,
+  type Request,
+  type Response,
+  type Dialog,
 } from "playwright";
 import {
   RolepodMcpError,
@@ -22,6 +27,7 @@ import type {
   A11ySnapshot,
   Direction,
   Engine,
+  FillField,
   OpenOptions,
   Session,
   WaitCondition,
@@ -31,21 +37,143 @@ type WebSession = Session & {
   readonly platform: "web";
   readonly browser: Browser;
   readonly context: BrowserContext;
-  readonly page: Page;
+  /** Main (initial) page. Subsequent popups land in SessionInternals.pages. */
+  readonly mainPage: Page;
+};
+
+export type ConsoleEntry = {
+  level: "error" | "warning" | "info" | "log" | "debug" | "trace";
+  text: string;
+  ts: string;
+  /** Best-effort file:line if Playwright provides it. */
+  location?: string;
+};
+
+export type NetworkEntry = {
+  id: number;
+  url: string;
+  method: string;
+  status?: number;
+  failure?: string;
+  resource_type: string;
+  ts: string;
+  duration_ms?: number;
+};
+
+type DialogArming = {
+  action: "accept" | "dismiss" | "accept_with_text";
+  text?: string;
+  expiresAt: number;
+  resolve: (handled: boolean) => void;
 };
 
 type SessionInternals = {
   session: WebSession;
   refIndex: Map<string, RefMeta>;
-  /**
-   * Monotonic generation number. Snapshot resets refs; any state-changing
-   * call bumps the generation, invalidating prior refs per D-010.
-   */
   snapshotGeneration: number;
-  /** Generation at which the current refIndex was issued. */
   refGeneration: number;
   lastSnapshotAt: string | null;
+
+  // v0.5 additions
+  pages: Page[];
+  activePageIndex: number;
+  consoleBuffer: ConsoleEntry[];
+  networkBuffer: NetworkEntry[];
+  networkInflight: Map<string, { id: number; startedAt: number; resourceType: string }>;
+  networkNextId: number;
+  dialogArming: DialogArming | null;
+  captureOpts: NonNullable<OpenOptions["capture"]> | undefined;
+  traceStarted: boolean;
 };
+
+const CONSOLE_BUFFER_CAP = 1000;
+const NETWORK_BUFFER_CAP = 1000;
+
+// CDP network condition presets. Numbers match Chrome DevTools UI exactly.
+const NETWORK_PRESETS = {
+  offline: { offline: true, downloadThroughput: 0, uploadThroughput: 0, latency: 0 },
+  "slow-3g": {
+    offline: false,
+    // 500 Kbps down / 500 Kbps up / 400ms RTT
+    downloadThroughput: (500 * 1024) / 8,
+    uploadThroughput: (500 * 1024) / 8,
+    latency: 400,
+  },
+  "fast-3g": {
+    offline: false,
+    downloadThroughput: (1.5 * 1024 * 1024) / 8,
+    uploadThroughput: (750 * 1024) / 8,
+    latency: 150,
+  },
+  "slow-4g": {
+    offline: false,
+    downloadThroughput: (4 * 1024 * 1024) / 8,
+    uploadThroughput: (3 * 1024 * 1024) / 8,
+    latency: 100,
+  },
+  "fast-4g": {
+    offline: false,
+    downloadThroughput: (9 * 1024 * 1024) / 8,
+    uploadThroughput: (4.5 * 1024 * 1024) / 8,
+    latency: 60,
+  },
+  "no-throttling": {
+    offline: false,
+    downloadThroughput: -1,
+    uploadThroughput: -1,
+    latency: 0,
+  },
+} as const;
+
+function pushRing<T>(buf: T[], entry: T, cap: number): void {
+  buf.push(entry);
+  if (buf.length > cap) buf.splice(0, buf.length - cap);
+}
+
+function mapConsoleLevel(t: string): ConsoleEntry["level"] {
+  switch (t) {
+    case "error":
+      return "error";
+    case "warning":
+      return "warning";
+    case "info":
+      return "info";
+    case "debug":
+      return "debug";
+    case "trace":
+      return "trace";
+    default:
+      return "log";
+  }
+}
+
+function formatConsoleLocation(msg: ConsoleMessage): string | undefined {
+  try {
+    const loc = msg.location();
+    if (!loc?.url) return undefined;
+    return `${loc.url}:${loc.lineNumber}:${loc.columnNumber}`;
+  } catch {
+    return undefined;
+  }
+}
+
+function findNetworkEntry(
+  buf: NetworkEntry[],
+  req: Request,
+): NetworkEntry | undefined {
+  // Walk back-to-front — most recent match wins (handles redirects /
+  // duplicate URLs with separate ids).
+  const url = req.url();
+  const method = req.method();
+  for (let i = buf.length - 1; i >= 0; i--) {
+    const e = buf[i];
+    if (!e) continue;
+    if (e.url === url && e.method === method && e.status === undefined && !e.failure) {
+      return e;
+    }
+  }
+  return undefined;
+}
 
 /**
  * PlaywrightEngine — v0.1 web-only implementation backed by Playwright's
@@ -81,37 +209,100 @@ export class PlaywrightEngine implements Engine {
     if (opts.user_agent) contextOptions.userAgent = opts.user_agent;
     if (opts.locale) contextOptions.locale = opts.locale;
 
-    const context = await browser.newContext(contextOptions);
-    const page = await context.newPage();
-    if (opts.url) {
-      await page.goto(opts.url, { waitUntil: "domcontentloaded" });
+    // Wire capture lifecycle. Playwright requires recordHar / recordVideo
+    // to be set at context creation; trace is start/stop-based.
+    if (opts.capture?.har) {
+      contextOptions.recordHar = { path: opts.capture.har.path };
+    }
+    if (opts.capture?.video) {
+      contextOptions.recordVideo = {
+        dir: opts.capture.video.dir,
+        size:
+          opts.capture.video.sizeWidth && opts.capture.video.sizeHeight
+            ? {
+                width: opts.capture.video.sizeWidth,
+                height: opts.capture.video.sizeHeight,
+              }
+            : undefined,
+      };
     }
 
+    const context = await browser.newContext(contextOptions);
+
+    if (opts.capture?.trace) {
+      await context.tracing.start({
+        screenshots: true,
+        snapshots: true,
+        sources: false,
+      });
+    }
+
+    const page = await context.newPage();
     const sessionId = randomUUID();
-    const session: WebSession = {
-      id: sessionId,
-      platform: "web",
-      browser,
-      context,
-      page,
-    };
-    this.sessions.set(sessionId, {
-      session,
+
+    const internals: SessionInternals = {
+      session: {
+        id: sessionId,
+        platform: "web",
+        browser,
+        context,
+        mainPage: page,
+      },
       refIndex: new Map(),
       snapshotGeneration: 0,
       refGeneration: -1,
       lastSnapshotAt: null,
+      pages: [page],
+      activePageIndex: 0,
+      consoleBuffer: [],
+      networkBuffer: [],
+      networkInflight: new Map(),
+      networkNextId: 1,
+      dialogArming: null,
+      captureOpts: opts.capture,
+      traceStarted: !!opts.capture?.trace,
+    };
+
+    this.attachPageListeners(internals, page);
+    context.on("page", (newPage) => {
+      internals.pages.push(newPage);
+      this.attachPageListeners(internals, newPage);
     });
+
+    if (opts.url) {
+      await page.goto(opts.url, { waitUntil: "domcontentloaded" });
+    }
+
+    this.sessions.set(sessionId, internals);
     log.info("session opened", {
       session_id: sessionId,
       browser: browserName,
       url: opts.url ?? null,
+      capture: opts.capture
+        ? Object.keys(opts.capture).filter(
+            (k) => opts.capture![k as keyof typeof opts.capture],
+          )
+        : [],
     });
     return { id: sessionId, platform: "web" };
   }
 
   async close(session: Session): Promise<void> {
     const s = this.requireSession(session.id);
+
+    // Stop tracing before context closes — trace.zip is written here.
+    if (s.traceStarted && s.captureOpts?.trace) {
+      const tracePath = resolvePath(s.captureOpts.trace.artifactDir, "trace.zip");
+      await s.session.context.tracing
+        .stop({ path: tracePath })
+        .catch((err: unknown) => {
+          log.warn("trace stop failed", {
+            session_id: session.id,
+            err: String(err),
+          });
+        });
+    }
+
     await s.session.context.close().catch((err: unknown) => {
       log.warn("context close failed", { session_id: session.id, err: String(err) });
     });
@@ -130,7 +321,7 @@ export class PlaywrightEngine implements Engine {
     // Playwright 1.60 removed `page.accessibility`. The ai-mode aria
     // snapshot is the supported successor — it carries `[ref=eN]` markers
     // that the `aria-ref=` locator can resolve back to elements.
-    const ariaYaml = await s.session.page.ariaSnapshot({ mode: "ai" });
+    const ariaYaml = await this.activePage(s).ariaSnapshot({ mode: "ai" });
     const { tree, refIndex } = parseAriaSnapshot(ariaYaml);
     void mode; // depth control will route here once we expose `depth` to callers.
 
@@ -142,7 +333,7 @@ export class PlaywrightEngine implements Engine {
     return {
       session_id: session.id,
       platform: "web",
-      url_or_screen: s.session.page.url(),
+      url_or_screen: this.activePage(s).url(),
       taken_at: s.lastSnapshotAt,
       tree,
     };
@@ -174,7 +365,7 @@ export class PlaywrightEngine implements Engine {
 
   async key(session: Session, key: string): Promise<void> {
     const s = this.requireSession(session.id);
-    await s.session.page.keyboard.press(key);
+    await this.activePage(s).keyboard.press(key);
     this.invalidateRefs(s);
   }
 
@@ -194,7 +385,7 @@ export class PlaywrightEngine implements Engine {
         [dx, dy],
       );
     } else {
-      await s.session.page.mouse.wheel(dx, dy);
+      await this.activePage(s).mouse.wheel(dx, dy);
     }
     this.invalidateRefs(s);
   }
@@ -205,7 +396,7 @@ export class PlaywrightEngine implements Engine {
     timeoutMs = 10_000,
   ): Promise<void> {
     const s = this.requireSession(session.id);
-    const page = s.session.page;
+    const page = this.activePage(s);
     switch (cond.kind) {
       case "text_visible":
         await page
@@ -232,7 +423,7 @@ export class PlaywrightEngine implements Engine {
 
   async screenshot(session: Session, fullPage = false): Promise<Buffer> {
     const s = this.requireSession(session.id);
-    return s.session.page.screenshot({ fullPage });
+    return this.activePage(s).screenshot({ fullPage });
   }
 
   async navigate(session: Session, url: string): Promise<void> {
@@ -240,7 +431,7 @@ export class PlaywrightEngine implements Engine {
     if (s.session.platform !== "web") {
       throw new UnsupportedPlatformError(s.session.platform);
     }
-    await s.session.page.goto(url, { waitUntil: "domcontentloaded" });
+    await this.activePage(s).goto(url, { waitUntil: "domcontentloaded" });
     this.invalidateRefs(s);
   }
 
@@ -255,7 +446,7 @@ export class PlaywrightEngine implements Engine {
     if (s.session.platform !== "web") {
       throw new UnsupportedPlatformError(s.session.platform);
     }
-    return s.session.page;
+    return this.activePage(s);
   }
 
   /** Increment generation; the next ref-using call will see them as stale. */
@@ -265,8 +456,415 @@ export class PlaywrightEngine implements Engine {
   }
 
   // -------------------------------------------------------------------------
+  // v0.5 — input additions
+  // -------------------------------------------------------------------------
+
+  async hover(session: Session, ref: string): Promise<void> {
+    const s = this.requireSession(session.id);
+    const locator = this.resolveLocator(s, ref);
+    await locator.hover();
+    // Hover does not modify DOM in the same way click does; keep refs valid.
+  }
+
+  async drag(
+    session: Session,
+    fromRef: string,
+    toRef: string,
+  ): Promise<void> {
+    const s = this.requireSession(session.id);
+    const from = this.resolveLocator(s, fromRef);
+    const to = this.resolveLocator(s, toRef);
+    await from.dragTo(to);
+    this.invalidateRefs(s);
+  }
+
+  async fillForm(session: Session, fields: FillField[]): Promise<void> {
+    const s = this.requireSession(session.id);
+    for (const field of fields) {
+      const locator = this.resolveLocator(s, field.ref);
+      const kind = field.kind;
+      if (kind === "checkbox" || kind === "radio") {
+        const checked = typeof field.value === "boolean"
+          ? field.value
+          : field.value === "true" || field.value === "on";
+        await locator.setChecked(checked);
+      } else if (kind === "select") {
+        await locator.selectOption(String(field.value));
+      } else {
+        // input / textarea / contenteditable
+        await locator.fill(String(field.value));
+      }
+    }
+    this.invalidateRefs(s);
+  }
+
+  async uploadFile(
+    session: Session,
+    ref: string,
+    filePath: string,
+  ): Promise<void> {
+    const s = this.requireSession(session.id);
+    if (!isAbsolute(filePath)) {
+      throw new RolepodMcpError(
+        "invalid_input",
+        `upload_file requires an absolute path; got "${filePath}".`,
+        { file_path: filePath },
+      );
+    }
+    const locator = this.resolveLocator(s, ref);
+    await locator.setInputFiles(filePath);
+    this.invalidateRefs(s);
+  }
+
+  // -------------------------------------------------------------------------
+  // v0.5 — web-only extensions (not on Engine interface; tools cast to
+  // PlaywrightEngine before calling).
+  // -------------------------------------------------------------------------
+
+  /**
+   * Pre-arm a one-shot dialog handler for the next dialog raised on the
+   * active page. Returns when either the dialog fires (and is handled)
+   * or the timeout elapses. The caller is expected to trigger the
+   * dialog (via click etc.) AFTER arming.
+   */
+  async handleDialog(
+    sessionId: string,
+    opts: {
+      action: "accept" | "dismiss" | "accept_with_text";
+      text?: string;
+      timeoutMs?: number;
+    },
+  ): Promise<{ handled: boolean }> {
+    const s = this.requireSession(sessionId);
+    const timeoutMs = opts.timeoutMs ?? 30_000;
+    const expiresAt = Date.now() + timeoutMs;
+
+    // If a previous arming is still pending, treat the new call as a
+    // replacement.
+    if (s.dialogArming) {
+      s.dialogArming.resolve(false);
+    }
+
+    return new Promise<{ handled: boolean }>((resolve) => {
+      const arming: DialogArming = {
+        action: opts.action,
+        text: opts.text,
+        expiresAt,
+        resolve: (handled) => {
+          s.dialogArming = null;
+          resolve({ handled });
+        },
+      };
+      s.dialogArming = arming;
+
+      // Timeout safety
+      const timer = setTimeout(() => {
+        if (s.dialogArming === arming) {
+          s.dialogArming = null;
+          resolve({ handled: false });
+        }
+      }, timeoutMs);
+      timer.unref?.();
+    });
+  }
+
+  getConsole(
+    sessionId: string,
+    opts?: {
+      levels?: ConsoleEntry["level"][];
+      contains?: string;
+      clear?: boolean;
+      limit?: number;
+    },
+  ): ConsoleEntry[] {
+    const s = this.requireSession(sessionId);
+    const levels = opts?.levels;
+    const contains = opts?.contains;
+    const limit = opts?.limit ?? 50;
+    let entries = s.consoleBuffer;
+    if (levels && levels.length > 0) {
+      entries = entries.filter((e) => levels.includes(e.level));
+    }
+    if (contains) {
+      entries = entries.filter((e) => e.text.includes(contains));
+    }
+    const result = entries.slice(-limit);
+    if (opts?.clear) s.consoleBuffer = [];
+    return result;
+  }
+
+  getNetwork(
+    sessionId: string,
+    opts?: {
+      urlPattern?: string;
+      patternKind?: "substring" | "regex";
+      method?: string;
+      statusRange?: { min: number; max: number };
+      onlyFailed?: boolean;
+      clear?: boolean;
+      limit?: number;
+    },
+  ): NetworkEntry[] {
+    const s = this.requireSession(sessionId);
+    let entries = s.networkBuffer;
+    if (opts?.urlPattern) {
+      if (opts.patternKind === "regex") {
+        const re = new RegExp(opts.urlPattern);
+        entries = entries.filter((e) => re.test(e.url));
+      } else {
+        entries = entries.filter((e) => e.url.includes(opts.urlPattern!));
+      }
+    }
+    if (opts?.method) {
+      const m = opts.method.toUpperCase();
+      entries = entries.filter((e) => e.method.toUpperCase() === m);
+    }
+    if (opts?.statusRange) {
+      const { min, max } = opts.statusRange;
+      entries = entries.filter(
+        (e) =>
+          e.status !== undefined && e.status >= min && e.status <= max,
+      );
+    }
+    if (opts?.onlyFailed) {
+      entries = entries.filter(
+        (e) => !!e.failure || (e.status !== undefined && e.status >= 400),
+      );
+    }
+    const limit = opts?.limit ?? 50;
+    const result = entries.slice(-limit);
+    if (opts?.clear) s.networkBuffer = [];
+    return result;
+  }
+
+  /**
+   * Read the consoleBuffer/networkBuffer directly without filtering —
+   * used by verify_ui_flow expect evaluators.
+   */
+  peekBuffers(sessionId: string): {
+    console: ConsoleEntry[];
+    network: NetworkEntry[];
+  } {
+    const s = this.requireSession(sessionId);
+    return { console: s.consoleBuffer, network: s.networkBuffer };
+  }
+
+  /**
+   * Runtime mutation of context-level emulation. CPU + network throttle
+   * use CDP and only work on chromium; everything else is cross-browser.
+   */
+  async setEnv(
+    sessionId: string,
+    opts: {
+      viewport?: { width: number; height: number };
+      offline?: boolean;
+      geolocation?: { latitude: number; longitude: number; accuracy?: number };
+      colorScheme?: "light" | "dark" | "no-preference";
+      reducedMotion?: "reduce" | "no-preference";
+      extraHeaders?: Record<string, string>;
+      networkThrottle?:
+        | "offline"
+        | "slow-3g"
+        | "fast-3g"
+        | "slow-4g"
+        | "fast-4g"
+        | "no-throttling";
+      cpuThrottle?: number;
+    },
+  ): Promise<void> {
+    const s = this.requireSession(sessionId);
+    const page = this.activePage(s);
+    const ctx = s.session.context;
+
+    if (opts.viewport) {
+      await page.setViewportSize(opts.viewport);
+    }
+    if (opts.offline !== undefined) {
+      await ctx.setOffline(opts.offline);
+    }
+    if (opts.geolocation) {
+      await ctx.setGeolocation(opts.geolocation);
+    }
+    if (opts.extraHeaders) {
+      await ctx.setExtraHTTPHeaders(opts.extraHeaders);
+    }
+    if (opts.colorScheme || opts.reducedMotion) {
+      await page.emulateMedia({
+        ...(opts.colorScheme ? { colorScheme: opts.colorScheme } : {}),
+        ...(opts.reducedMotion ? { reducedMotion: opts.reducedMotion } : {}),
+      });
+    }
+    if (opts.networkThrottle || opts.cpuThrottle !== undefined) {
+      const browserName = ctx.browser()?.browserType().name();
+      if (browserName !== "chromium") {
+        throw new RolepodMcpError(
+          "unsupported_engine",
+          `networkThrottle / cpuThrottle require chromium (CDP-backed); current browser is "${browserName}".`,
+        );
+      }
+      const cdp = await ctx.newCDPSession(page);
+      try {
+        if (opts.networkThrottle) {
+          const preset = NETWORK_PRESETS[opts.networkThrottle];
+          await cdp.send("Network.enable");
+          await cdp.send("Network.emulateNetworkConditions", preset);
+        }
+        if (opts.cpuThrottle !== undefined) {
+          await cdp.send("Emulation.setCPUThrottlingRate", {
+            rate: opts.cpuThrottle,
+          });
+        }
+      } finally {
+        await cdp.detach().catch(() => undefined);
+      }
+    }
+    this.invalidateRefs(s);
+  }
+
+  /**
+   * Execute a JavaScript function in the page context. ALWAYS gated by
+   * the tool layer (`ROLEPOD_ALLOW_EVAL=1`); this method does not enforce
+   * the env check.
+   */
+  async evaluate(
+    sessionId: string,
+    script: string,
+    args?: unknown[],
+  ): Promise<unknown> {
+    const s = this.requireSession(sessionId);
+    const page = this.activePage(s);
+    // Script body runs inside `(async () => { ... })()` in the page context.
+    // Caller can `return await fetch(...)` etc. `args` is exposed as a global
+    // `args` array.
+    return page.evaluate(
+      ({ src, a }) =>
+        // eslint-disable-next-line no-new-func
+        new Function("args", `return (async () => { ${src} })();`)(a),
+      { src: script, a: args ?? [] },
+    );
+  }
+
+  listPages(sessionId: string): {
+    index: number;
+    url: string;
+    title_promise: Promise<string>;
+    active: boolean;
+  }[] {
+    const s = this.requireSession(sessionId);
+    return s.pages.map((p, i) => ({
+      index: i,
+      url: p.url(),
+      title_promise: p.title(),
+      active: i === s.activePageIndex,
+    }));
+  }
+
+  async switchPage(sessionId: string, index: number): Promise<void> {
+    const s = this.requireSession(sessionId);
+    if (index < 0 || index >= s.pages.length) {
+      throw new RolepodMcpError(
+        "invalid_input",
+        `Page index ${index} out of range (have ${s.pages.length} page(s)).`,
+        { index, available: s.pages.length },
+      );
+    }
+    s.activePageIndex = index;
+    this.invalidateRefs(s);
+  }
+
+  // -------------------------------------------------------------------------
   // Internal helpers
   // -------------------------------------------------------------------------
+
+  private activePage(s: SessionInternals): Page {
+    return s.pages[s.activePageIndex] ?? s.session.mainPage;
+  }
+
+  private attachPageListeners(s: SessionInternals, page: Page): void {
+    page.on("console", (msg: ConsoleMessage) => {
+      const level = mapConsoleLevel(msg.type());
+      pushRing(
+        s.consoleBuffer,
+        {
+          level,
+          text: msg.text(),
+          ts: new Date().toISOString(),
+          location: formatConsoleLocation(msg),
+        },
+        CONSOLE_BUFFER_CAP,
+      );
+    });
+
+    page.on("request", (req: Request) => {
+      const id = s.networkNextId++;
+      s.networkInflight.set(req.url() + "::" + req.method() + "::" + id, {
+        id,
+        startedAt: Date.now(),
+        resourceType: req.resourceType(),
+      });
+      // Optimistic entry — will be updated on response/failed.
+      pushRing(
+        s.networkBuffer,
+        {
+          id,
+          url: req.url(),
+          method: req.method(),
+          resource_type: req.resourceType(),
+          ts: new Date().toISOString(),
+        },
+        NETWORK_BUFFER_CAP,
+      );
+    });
+
+    page.on("response", (res: Response) => {
+      const req = res.request();
+      const entry = findNetworkEntry(s.networkBuffer, req);
+      if (entry) {
+        entry.status = res.status();
+        entry.duration_ms = Date.now() - new Date(entry.ts).getTime();
+      }
+    });
+
+    page.on("requestfailed", (req: Request) => {
+      const entry = findNetworkEntry(s.networkBuffer, req);
+      if (entry) {
+        entry.failure = req.failure()?.errorText ?? "request failed";
+      }
+    });
+
+    page.on("dialog", (dialog: Dialog) => {
+      void this.handlePageDialog(s, dialog);
+    });
+  }
+
+  private async handlePageDialog(
+    s: SessionInternals,
+    dialog: Dialog,
+  ): Promise<void> {
+    const arm = s.dialogArming;
+    if (!arm || Date.now() > arm.expiresAt) {
+      // Nothing armed → auto-dismiss so the page does not hang.
+      await dialog.dismiss().catch(() => undefined);
+      if (arm) arm.resolve(false);
+      return;
+    }
+    try {
+      if (arm.action === "accept") {
+        await dialog.accept();
+      } else if (arm.action === "accept_with_text") {
+        await dialog.accept(arm.text ?? "");
+      } else {
+        await dialog.dismiss();
+      }
+      arm.resolve(true);
+    } catch (err) {
+      log.warn("dialog handle failed", {
+        session_id: s.session.id,
+        err: String(err),
+      });
+      arm.resolve(false);
+    }
+  }
 
   private requireSession(sessionId: string): SessionInternals {
     const s = this.sessions.get(sessionId);
@@ -299,7 +897,7 @@ export class PlaywrightEngine implements Engine {
     if (meta.ref.startsWith("s")) {
       throw new UnknownRefError(s.session.id, ref);
     }
-    return s.session.page.locator(`aria-ref=${meta.ref}`);
+    return this.activePage(s).locator(`aria-ref=${meta.ref}`);
   }
 
   private invalidateRefs(s: SessionInternals): void {
