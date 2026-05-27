@@ -35,6 +35,30 @@ import { log } from "./util/log.js";
 export const SERVER_NAME = "rolepod-uiproof";
 export const SERVER_VERSION = "0.5.0";
 
+/**
+ * Extension Protocol version this build implements. Compared against the
+ * parent-supplied `ROLEPOD_PROTOCOL` env var at server start.
+ */
+export const SUPPORTED_PROTOCOL = "v1" as const;
+
+/**
+ * Warn (don't fail) when the parent `rolepod` plugin signals a protocol
+ * version we don't implement. Skipping the check would let a parent on a
+ * future v2 silently get mis-shaped evidence; throwing would break older
+ * parents that haven't set the env var at all.
+ */
+function checkProtocolCompat(): void {
+  const requested = process.env.ROLEPOD_PROTOCOL;
+  if (!requested) return; // not running with a protocol-aware parent
+  if (requested !== SUPPORTED_PROTOCOL) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `rolepod protocol mismatch: expected ${SUPPORTED_PROTOCOL}, got ${requested}. ` +
+        `Manifest will still be written in ${SUPPORTED_PROTOCOL} shape — parent may not parse it correctly.`,
+    );
+  }
+}
+
 export type ServerHandle = {
   mcp: McpServer;
   registry: SessionRegistry;
@@ -50,6 +74,8 @@ export type ServerHandle = {
 export function buildServer(
   opts: { artifactRoot?: string; idleTimeoutMs?: number } = {},
 ): ServerHandle {
+  checkProtocolCompat();
+
   const webEngine = createWebEngine();
   const registry = new SessionRegistry({ idleTimeoutMs: opts.idleTimeoutMs });
   registry.register("web", webEngine);
@@ -119,6 +145,8 @@ export function buildServer(
 
   log.info("rolepod-uiproof server built", {
     version: SERVER_VERSION,
+    protocol: SUPPORTED_PROTOCOL,
+    mode: store.mode,
     tools: tools.map((t) => t.name),
   });
 
