@@ -17,6 +17,7 @@ import { extractUiStateTool } from "./tools/composite/extract_ui_state.js";
 import { scaffoldE2eTool } from "./tools/composite/scaffold_e2e.js";
 import { verifyUiFlowTool } from "./tools/composite/verify_ui_flow.js";
 import { visualDiffTool } from "./tools/composite/visual_diff.js";
+import { toolMetadata } from "./tools/metadata.js";
 import type { ToolContext } from "./tools/types.js";
 import { log } from "./util/log.js";
 
@@ -80,9 +81,15 @@ export function buildServer(
   ] as const;
 
   for (const t of tools) {
+    const meta = toolMetadata[t.name as keyof typeof toolMetadata];
     mcp.registerTool(
       t.name,
-      { description: t.description, inputSchema: t.inputShape },
+      {
+        title: meta?.title,
+        description: t.description,
+        inputSchema: t.inputShape,
+        annotations: meta?.annotations,
+      },
       t.build(ctx) as Parameters<typeof mcp.registerTool>[2],
     );
   }
