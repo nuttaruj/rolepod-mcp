@@ -7,6 +7,105 @@ release.
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-05-27
+
+**Complete UI verification surface — one MCP replaces chrome-devtools-mcp
+and playwright-mcp for UI testing use cases.**
+
+Tool count: 15 → 26 (atomic 10 → 21, composite 5 unchanged). The five
+"out of scope for `uiproof`" families (Lighthouse, performance traces,
+heap snapshots, extensions, third-party page tools) are intentionally
+**not** added — those belong to future `rolepod-perfproof` and
+`rolepod-secproof` MCPs.
+
+### Added — 11 new atomic tools
+
+Cross-platform (work on chromium/firefox/webkit; mobile stubs throw
+`engine_error` until gestures land):
+
+- `rolepod_browser_hover` — `locator.hover()`; refs stay valid
+- `rolepod_browser_drag` — `locator.dragTo()`
+- `rolepod_browser_fill_form` — batch input/select/checkbox/radio
+- `rolepod_browser_upload_file` — `locator.setInputFiles()`, abs path required
+
+Web-only (cast to `PlaywrightEngine`):
+
+- `rolepod_browser_handle_dialog` — pre-arm one-shot accept/dismiss
+- `rolepod_browser_console` — list/filter/clear ring-buffered console
+  messages (1000-entry cap, errors+warnings default)
+- `rolepod_browser_network` — list/filter network requests, optional HAR export
+- `rolepod_browser_set_env` — runtime viewport / offline / geolocation /
+  color_scheme / reduced_motion / extra_headers / network_throttle (CDP) /
+  cpu_throttle (CDP)
+- `rolepod_browser_evaluate` — arbitrary JS in page context.
+  **Disabled by default** — opt in via `ROLEPOD_ALLOW_EVAL=1` env var
+- `rolepod_browser_pages` — list pages in active context (popups,
+  target=_blank, OAuth windows)
+- `rolepod_browser_switch_page` — set active page index
+
+### Added — verify_ui_flow capture lifecycle (impl)
+
+The `capture` array has accepted these values since v0.1, but only
+`screenshot` was wired. v0.5 fills in the rest:
+
+- `console` → `{runDir}/console.json`
+- `har` → `{runDir}/network.har`
+- `video` → `{runDir}/videos/*.webm`
+- `trace` → `{runDir}/trace.zip` (view with `npx playwright show-trace`)
+- `a11y_tree` → `{runDir}/a11y_tree.json`
+
+### Added — 8 new verify_ui_flow step kinds
+
+`hover`, `drag`, `fill_form`, `upload`, `dialog`, `set_env`,
+`switch_page`, `evaluate`. All get first-class codegen in
+`scaffold_e2e` for playwright-test and pytest+selenium.
+
+### Added — 4 new verify_ui_flow expect kinds
+
+- `no_console_errors` — filter level=error, drop excludes, count must be 0
+- `no_failed_requests` — filter `failure || status>=400` (or `>=500`
+  when `allow_4xx`), drop excludes, count must be 0
+- `request_made` — URL regex + optional method must match `min_count`
+  (default 1) times
+- `response_status` — URL regex + exact status code must match
+
+### Added — multi-page support
+
+A session is now a `context` (was a single page). Popups and
+`target="_blank"` links are auto-tracked. Use `browser_pages` to list,
+`browser_switch_page` to activate. Default active = page 0.
+
+### Added — new skill `/check-errors`
+
+Thin wrapper over `rolepod_verify_ui_flow` with strict assertions baked
+in. Use case: PR-gate or post-merge smoke.
+
+### Changed — `/verify-ui` and `/scaffold-e2e` skills
+
+Documented every new step / expect / capture kind. Default suggestion
+in `/verify-ui`: include `no_console_errors` and `no_failed_requests`
+in `expect` for any user-visible flow.
+
+### Changed — Engine interface
+
+Adds four cross-platform input methods: `hover`, `drag`, `fillForm`,
+`uploadFile`. `OpenOptions.capture` accepts `{ har, video, trace }`.
+`WebSession.page` renamed to `mainPage`; internal call sites go through
+`activePage(s)`.
+
+### Non-changes (intentional)
+
+- `screencast_*` not added — Playwright `trace.zip` is strictly better.
+- `click_at` not added — use refs from `snapshot`.
+- Lighthouse not added — axe-core covers a11y.
+- Performance traces / heap snapshots not added — `rolepod-perfproof` scope.
+- Extension management not added — out of scope.
+
+### Migration from 0.4
+
+Pure additions; no behavioral changes on existing tools or
+step/expect/capture kinds. Existing replay bundles play back unchanged.
+
 ## [0.4.1] — 2026-05-27
 
 ### Fixed

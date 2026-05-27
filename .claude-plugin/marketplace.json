@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "rolepod-uiproof",
-  "description": "Multi-platform UI / mobile automation MCP server + 4 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e) for AI coding agents.",
+  "description": "Multi-platform UI / mobile automation MCP server + 5 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e, check-errors) for AI coding agents.",
   "owner": {
     "name": "nuttaruj",
     "url": "https://github.com/nuttaruj"
@@ -10,8 +10,8 @@
     {
       "name": "rolepod-uiproof",
       "source": "./",
-      "description": "15 MCP tools (10 atomic browser/mobile primitives + 5 composite workflows) + 4 user-invocable skills. Web production-ready via Playwright; mobile (iOS/Android) via Appium scaffolded — see `rolepod-uiproof doctor` for readiness.",
-      "version": "0.4.0",
+      "description": "26 MCP tools (21 atomic browser/mobile primitives + 5 composite workflows) + 5 user-invocable skills. v0.5 completes the UI verification surface — console + network observability, hover/drag/fill_form/upload/dialog, runtime emulation, multi-page, gated JS eval — replacing chrome-devtools-mcp and playwright-mcp for UI testing. Web production-ready via Playwright; mobile (iOS/Android) via Appium scaffolded — see `rolepod-uiproof doctor` for readiness.",
+      "version": "0.5.0",
       "author": {
         "name": "nuttaruj"
       },

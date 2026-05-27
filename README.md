@@ -1,25 +1,29 @@
 # rolepod-uiproof
 
-**rolepod-uiproof gives Claude Code, Cursor, Codex CLI, and Gemini CLI a real browser/mobile driver — so the AI can actually click through your UI, audit accessibility, diff screenshots, and scaffold e2e tests instead of guessing.**
+**rolepod-uiproof gives Claude Code, Cursor, Codex CLI, and Gemini CLI a real browser/mobile driver — so the AI can actually click through your UI, audit accessibility, check console errors, inspect network requests, diff screenshots, and scaffold e2e tests instead of guessing.**
 
-One MCP server, one tool surface, four skills you invoke from chat. Web is production-ready via Playwright; iOS and Android use Appium (same client as alumnium — needs a local Appium daemon + simulator/emulator, or a real device). No internal LLM — your Lead agent drives every action.
+One MCP server, one tool surface, five skills you invoke from chat. Web is production-ready via Playwright; iOS and Android use Appium (same client as alumnium — needs a local Appium daemon + simulator/emulator, or a real device). No internal LLM — your Lead agent drives every action.
+
+**v0.5 completes the UI verification surface — replacing `chrome-devtools-mcp` and `playwright-mcp` for UI testing.** 26 tools total (21 atomic + 5 composite). New in v0.5: console + network observability, hover / drag / fill_form / upload / dialog, runtime emulation (resize / offline / geolocation / color_scheme / network + CPU throttle), multi-page support, gated JS eval, and impl of HAR / video / trace capture in `/verify-ui`.
 
 ## What it helps with
 
-- **Verify a UI change in seconds.** `/verify-ui` opens a real browser, runs your steps, checks your assertions, saves a screenshot + replay bundle.
+- **Verify a UI change in seconds.** `/verify-ui` opens a real browser, runs your steps, checks your assertions, saves a screenshot + replay bundle (optionally HAR + video + trace + console logs).
+- **Gate merges on "no regressions during this flow".** `/check-errors` runs a flow with strict `no_console_errors` + `no_failed_requests` assertions baked in. PR-gate or post-merge smoke check.
 - **Catch a11y regressions before merge.** `/audit-a11y` runs axe-core against WCAG-A / AA / AAA and returns issues grouped by severity, with WCAG references and fix links.
 - **Lock down the visual contract.** `/visual-diff` captures a screenshot and compares against a named baseline under `./.rolepod-uiproof/baselines/`. First call seeds; subsequent calls diff.
-- **Turn an interactive verify run into a real test file.** `/scaffold-e2e` transcribes a replay bundle into Playwright Test, Vitest+Playwright, or pytest+selenium.
+- **Turn an interactive verify run into a real test file.** `/scaffold-e2e` transcribes a replay bundle into Playwright Test, Vitest+Playwright, or pytest+selenium — with first-class codegen for every step + expect kind.
 - **Reproduce + minimize a bug deterministically.** `/verify-ui` with `mode: "reproduce"` runs ddmin step-elimination to find the shortest still-reproducing sequence.
 
-## The four skills
+## The five skills
 
 | Skill | Wraps | What it does |
 |---|---|---|
-| `/verify-ui` | `rolepod_verify_ui_flow` | Drive a session through steps, evaluate assertions, save evidence + replay bundle. `mode: assert` (default) or `reproduce` with optional ddmin minimization. |
+| `/verify-ui` | `rolepod_verify_ui_flow` | Drive a session through steps, evaluate assertions (incl. console errors / failed requests / specific request made / response status), save evidence (screenshot / console / HAR / video / trace / a11y_tree) + replay bundle. `mode: assert` or `reproduce` with optional ddmin minimization. |
+| `/check-errors` | `rolepod_verify_ui_flow` | Thin wrapper with strict `no_console_errors` + `no_failed_requests` baked in. Use as PR-gate or post-merge smoke. |
 | `/audit-a11y` | `rolepod_audit_a11y` | axe-core audit at WCAG-A / AA / AAA. `scope: "page"` or `scope: { ref }`. Markdown or JSON report. |
 | `/visual-diff` | `rolepod_visual_diff` | Pixel diff against a named baseline. Auto-seeds on first call. Configurable threshold + pixelmatch sensitivity. |
-| `/scaffold-e2e` | `rolepod_scaffold_e2e` | Generate a runnable test file from a scenario + optional replay bundle. Three target frameworks. |
+| `/scaffold-e2e` | `rolepod_scaffold_e2e` | Generate a runnable test file from a scenario + optional replay bundle. Three target frameworks. v0.5 codegen handles every step + expect kind. |
 
 Every skill is **single-backend** (D-024) — it calls the rolepod-uiproof server and only the rolepod-uiproof server. If the server is unavailable, the skill fails with a clear diagnostic. Multi-backend routing belongs in the parent [`rolepod`](https://github.com/nuttaruj/rolepod) plugin's phase skills, not here.
 

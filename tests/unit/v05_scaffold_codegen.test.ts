@@ -66,9 +66,11 @@ async function generate(
     url: "https://example.com",
     recorded_bundle: bundlePath,
   });
-  const content = JSON.parse(out.content[0]!.text as string) as {
-    test_file_path: string;
-  };
+  const first = out.content[0]!;
+  if (first.type !== "text") {
+    throw new Error(`expected text content, got ${first.type}`);
+  }
+  const content = JSON.parse(first.text) as { test_file_path: string };
   return readFileSync(content.test_file_path, "utf8");
 }
 

@@ -1,7 +1,7 @@
 {
   "name": "rolepod-uiproof",
-  "version": "0.4.0",
-  "description": "Multi-platform UI/mobile automation for AI agents — 4 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e) + MCP server with 15 tools. v0.3 adds AppiumEngine scaffolding for iOS/Android; web is production-ready via Playwright.",
+  "version": "0.5.0",
+  "description": "Multi-platform UI/mobile automation for AI agents — 5 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e, check-errors) + MCP server with 26 tools. v0.5 completes the UI verification surface: console + network observability, hover/drag/fill_form/upload/dialog, runtime emulation, multi-page, gated JS eval.",
   "author": {
     "name": "nuttaruj",
     "url": "https://github.com/nuttaruj"
@@ -25,7 +25,7 @@
   "interface": {
     "displayName": "Rolepod UIProof",
     "shortDescription": "UI verification, a11y audits, visual diff, e2e scaffolding — for AI coding agents.",
-    "longDescription": "rolepod-uiproof ships an MCP server with 15 tools (10 atomic + 5 composite) and 4 user-invocable skills (/verify-ui, /audit-a11y, /visual-diff, /scaffold-e2e). Web is fully supported via Playwright; mobile (iOS/Android via Appium) lands in v0.3.",
+    "longDescription": "rolepod-uiproof ships an MCP server with 26 tools (21 atomic + 5 composite) and 5 user-invocable skills (/verify-ui, /audit-a11y, /visual-diff, /scaffold-e2e, /check-errors). Web is fully supported via Playwright; mobile (iOS/Android via Appium) supports basic input. v0.5 completes the UI verification surface.",
     "developerName": "nuttaruj",
     "category": "Productivity",
     "capabilities": ["Read", "Write", "Bash"],

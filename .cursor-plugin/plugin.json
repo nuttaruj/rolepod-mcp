@@ -1,8 +1,8 @@
 {
   "name": "rolepod-uiproof",
   "displayName": "Rolepod UIProof",
-  "version": "0.4.0",
-  "description": "Multi-platform UI / mobile automation MCP server + 4 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e) for AI coding agents. Web production-ready via Playwright; mobile (iOS/Android via Appium) scaffolded.",
+  "version": "0.5.0",
+  "description": "Multi-platform UI / mobile automation MCP server + 5 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e, check-errors) for AI coding agents. v0.5 completes the UI verification surface: console + network observability, hover/drag/fill_form/upload/dialog, runtime emulation, multi-page, gated JS eval — replacing chrome-devtools-mcp and playwright-mcp.",
   "author": {
     "name": "nuttaruj"
   },
