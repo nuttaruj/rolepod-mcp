@@ -1,10 +1,18 @@
+import { readdir } from "node:fs/promises";
+import { resolve as resolvePath } from "node:path";
+import { PlaywrightEngine } from "../../engine/PlaywrightEngine.js";
 import {
   ToolNames,
   verifyUiFlowShape,
   type A11yNode,
   type VerifyUiFlowInput,
 } from "../../schema/tools.js";
-import type { A11ySnapshot, Engine, Session } from "../../engine/Engine.js";
+import type {
+  A11ySnapshot,
+  Engine,
+  OpenOptions,
+  Session,
+} from "../../engine/Engine.js";
 import { ddmin } from "../../replay/minimize.js";
 import { RolepodMcpError } from "../../util/errors.js";
 import { ok, safeHandler } from "../result.js";
@@ -66,13 +74,40 @@ export const verifyUiFlowTool: ToolModule<typeof verifyUiFlowShape> = {
 // attempt.
 // ---------------------------------------------------------------------------
 
+type Evidence = {
+  screenshots: string[];
+  replay_bundle?: string;
+  console?: string;
+  a11y_tree?: string;
+  har?: string;
+  trace?: string;
+  video?: string[];
+};
+
 type RunOutcome = {
   passed: boolean;
   failedAtStep?: number;
   failureReason?: string;
   finalUrl?: string;
-  evidence: { screenshots: string[]; replay_bundle?: string };
+  evidence: Evidence;
 };
+
+function buildCaptureOptions(
+  captures: Set<string>,
+  runDir: string,
+): OpenOptions["capture"] | undefined {
+  const cap: NonNullable<OpenOptions["capture"]> = {};
+  if (captures.has("har")) {
+    cap.har = { path: resolvePath(runDir, "network.har") };
+  }
+  if (captures.has("video")) {
+    cap.video = { dir: resolvePath(runDir, "videos") };
+  }
+  if (captures.has("trace")) {
+    cap.trace = { artifactDir: runDir };
+  }
+  return Object.keys(cap).length > 0 ? cap : undefined;
+}
 
 async function runFlow(
   ctx: ToolContext,
@@ -81,13 +116,22 @@ async function runFlow(
   runDir: string,
   opts: { captureEvidence: boolean; bundleName: string },
 ): Promise<RunOutcome> {
-  const evidence: { screenshots: string[]; replay_bundle?: string } = { screenshots: [] };
+  const evidence: Evidence = { screenshots: [] };
+  const captures = new Set<string>(args.capture ?? ["screenshot"]);
   let passed = false;
   let failedAtStep: number | undefined;
   let failureReason: string | undefined;
   let finalSnapshot: A11ySnapshot | undefined;
 
-  const session = await ctx.registry.open(args.open);
+  // Build OpenOptions enriched with capture lifecycle requests. The
+  // engine wires recordHar / recordVideo / tracing at context creation.
+  const openOpts: OpenOptions = { ...args.open };
+  const captureCfg = buildCaptureOptions(captures, runDir);
+  if (captureCfg) {
+    openOpts.capture = captureCfg;
+  }
+
+  const session = await ctx.registry.open(openOpts);
   const engine = ctx.registry.engineFor(session.id);
   const sessionHandle: Session = { id: session.id, platform: session.platform };
 
@@ -122,8 +166,7 @@ async function runFlow(
     passed = false;
   } finally {
     if (opts.captureEvidence) {
-      const wantScreenshot = !args.capture || args.capture.includes("screenshot");
-      if (wantScreenshot) {
+      if (captures.has("screenshot")) {
         try {
           const buf = await engine.screenshot(sessionHandle, true);
           const p = await ctx.store.writeScreenshot(runDir, buf, "final");
@@ -132,6 +175,40 @@ async function runFlow(
           failureReason ??= `screenshot capture failed: ${describeError(err)}`;
         }
       }
+
+      if (captures.has("console") && engine instanceof PlaywrightEngine) {
+        try {
+          const messages = engine.peekBuffers(session.id).console;
+          evidence.console = await ctx.store.writeReport(
+            runDir,
+            "console.json",
+            JSON.stringify(
+              {
+                count: messages.length,
+                by_level: countByLevel(messages),
+                messages,
+              },
+              null,
+              2,
+            ),
+          );
+        } catch (err) {
+          failureReason ??= `console capture failed: ${describeError(err)}`;
+        }
+      }
+
+      if (captures.has("a11y_tree") && finalSnapshot) {
+        try {
+          evidence.a11y_tree = await ctx.store.writeReport(
+            runDir,
+            "a11y_tree.json",
+            JSON.stringify(finalSnapshot, null, 2),
+          );
+        } catch (err) {
+          failureReason ??= `a11y_tree capture failed: ${describeError(err)}`;
+        }
+      }
+
       try {
         evidence.replay_bundle = await ctx.store.writeReplayBundle(
           runDir,
@@ -154,11 +231,41 @@ async function runFlow(
     }
   }
 
+  // HAR / video / trace artifacts are flushed by the engine on context close.
+  // Surface their paths now that the close has completed (if captureEvidence
+  // was requested).
+  if (opts.captureEvidence) {
+    if (captureCfg?.har) evidence.har = captureCfg.har.path;
+    if (captureCfg?.trace) {
+      evidence.trace = resolvePath(captureCfg.trace.artifactDir, "trace.zip");
+    }
+    if (captureCfg?.video) {
+      try {
+        const files = await readdir(captureCfg.video.dir).catch(() => [] as string[]);
+        evidence.video = files
+          .filter((f) => f.endsWith(".webm"))
+          .map((f) => resolvePath(captureCfg.video!.dir, f));
+      } catch {
+        /* swallow — video is best-effort */
+      }
+    }
+  }
+
   const out: RunOutcome = { passed, evidence };
   if (failedAtStep !== undefined) out.failedAtStep = failedAtStep;
   if (failureReason !== undefined) out.failureReason = failureReason;
   if (finalSnapshot) out.finalUrl = finalSnapshot.url_or_screen;
   return out;
+}
+
+function countByLevel(
+  messages: { level: string }[],
+): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const m of messages) {
+    counts[m.level] = (counts[m.level] ?? 0) + 1;
+  }
+  return counts;
 }
 
 // ---------------------------------------------------------------------------
