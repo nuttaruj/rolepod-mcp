@@ -191,6 +191,75 @@ function playwrightStepLine(step: Step): string {
       return `  await page.goto(${JSON.stringify(step.url)});`;
     case "wait_for":
       return `  // wait_for: ${JSON.stringify(step.condition)} — translate to page.waitForXxx()`;
+    case "hover":
+      return `  await page.getByText(${JSON.stringify(step.query)}, { exact: false }).first().hover();`;
+    case "drag":
+      return [
+        `  await page`,
+        `    .getByText(${JSON.stringify(step.from_query)}, { exact: false })`,
+        `    .first()`,
+        `    .dragTo(page.getByText(${JSON.stringify(step.to_query)}, { exact: false }).first());`,
+      ].join("\n");
+    case "fill_form": {
+      const fields = Array.isArray(step.fields) ? (step.fields as Array<{ query: string; value: unknown; kind?: string }>) : [];
+      return fields
+        .map((f) => {
+          const q = JSON.stringify(f.query);
+          if (f.kind === "select") {
+            return `  await page.getByLabel(${q}).selectOption(${JSON.stringify(String(f.value))});`;
+          }
+          if (f.kind === "checkbox" || f.kind === "radio") {
+            const checked = typeof f.value === "boolean"
+              ? f.value
+              : String(f.value) === "true" || String(f.value) === "on";
+            return `  await page.getByLabel(${q}).setChecked(${checked});`;
+          }
+          return `  await page.getByLabel(${q}).fill(${JSON.stringify(String(f.value))});`;
+        })
+        .join("\n");
+    }
+    case "upload":
+      return `  await page.getByLabel(${JSON.stringify(step.query)}).setInputFiles(${JSON.stringify(step.file_path)});`;
+    case "dialog":
+      return [
+        `  page.once("dialog", async (dialog) => {`,
+        step.action === "accept"
+          ? `    await dialog.accept();`
+          : step.action === "accept_with_text"
+            ? `    await dialog.accept(${JSON.stringify(step.text ?? "")});`
+            : `    await dialog.dismiss();`,
+        `  });`,
+      ].join("\n");
+    case "set_env": {
+      const lines: string[] = [];
+      if (step.viewport && typeof step.viewport === "object") {
+        const v = step.viewport as { width: number; height: number };
+        lines.push(`  await page.setViewportSize({ width: ${v.width}, height: ${v.height} });`);
+      }
+      if (step.offline !== undefined) {
+        lines.push(`  await page.context().setOffline(${Boolean(step.offline)});`);
+      }
+      if (step.geolocation) {
+        lines.push(`  await page.context().setGeolocation(${JSON.stringify(step.geolocation)});`);
+      }
+      if (step.color_scheme || step.reduced_motion) {
+        const opts: Record<string, unknown> = {};
+        if (step.color_scheme) opts.colorScheme = step.color_scheme;
+        if (step.reduced_motion) opts.reducedMotion = step.reduced_motion;
+        lines.push(`  await page.emulateMedia(${JSON.stringify(opts)});`);
+      }
+      if (step.extra_headers) {
+        lines.push(`  await page.context().setExtraHTTPHeaders(${JSON.stringify(step.extra_headers)});`);
+      }
+      if (step.network_throttle || step.cpu_throttle !== undefined) {
+        lines.push(`  // network/cpu throttle requires CDP — see Playwright docs (chromium only)`);
+      }
+      return lines.length > 0 ? lines.join("\n") : `  // set_env: nothing to apply`;
+    }
+    case "switch_page":
+      return `  const allPages = page.context().pages(); /* switch to index ${step.index} */ if (allPages[${step.index}]) await allPages[${step.index}].bringToFront();`;
+    case "evaluate":
+      return `  await page.evaluate(${JSON.stringify(step.script)});`;
     default:
       return `  // unsupported step kind: ${step.kind}`;
   }
@@ -206,6 +275,20 @@ function playwrightExpectLine(exp: Expect): string {
       return `  await expect(page).toHaveURL(new RegExp(${JSON.stringify(exp.pattern)}));`;
     case "ref_in_state":
       return `  // ref_in_state ${JSON.stringify(exp.query)} → ${String(exp.state)} — translate as needed`;
+    case "no_console_errors":
+      return [
+        `  // no_console_errors — collect via page.on('console') before the steps, then:`,
+        `  // expect(consoleErrors).toEqual([]);`,
+      ].join("\n");
+    case "no_failed_requests":
+      return [
+        `  // no_failed_requests — collect via page.on('requestfailed'/'response') before the steps, then:`,
+        `  // expect(failedRequests).toEqual([]);`,
+      ].join("\n");
+    case "request_made":
+      return `  await page.waitForRequest(new RegExp(${JSON.stringify(exp.url_pattern)}));`;
+    case "response_status":
+      return `  await page.waitForResponse((r) => new RegExp(${JSON.stringify(exp.url_pattern)}).test(r.url()) && r.status() === ${Number(exp.status)});`;
     default:
       return `  // unsupported expect kind: ${exp.kind}`;
   }
@@ -223,6 +306,67 @@ function seleniumStepLine(step: Step): string {
       return `    driver.get(${JSON.stringify(step.url)})`;
     case "wait_for":
       return `    # wait_for: ${JSON.stringify(step.condition)} — translate to WebDriverWait`;
+    case "hover":
+      return [
+        `    from selenium.webdriver.common.action_chains import ActionChains`,
+        `    target = driver.find_element(By.XPATH, f"//*[contains(text(), \\"${escapePy(String(step.query))}\\")]")`,
+        `    ActionChains(driver).move_to_element(target).perform()`,
+      ].join("\n");
+    case "drag":
+      return [
+        `    from selenium.webdriver.common.action_chains import ActionChains`,
+        `    src = driver.find_element(By.XPATH, f"//*[contains(text(), \\"${escapePy(String(step.from_query))}\\")]")`,
+        `    dst = driver.find_element(By.XPATH, f"//*[contains(text(), \\"${escapePy(String(step.to_query))}\\")]")`,
+        `    ActionChains(driver).drag_and_drop(src, dst).perform()`,
+      ].join("\n");
+    case "fill_form": {
+      const fields = Array.isArray(step.fields)
+        ? (step.fields as Array<{ query: string; value: unknown; kind?: string }>)
+        : [];
+      return fields
+        .map((f) => {
+          const q = escapePy(f.query);
+          if (f.kind === "select") {
+            return [
+              `    from selenium.webdriver.support.ui import Select`,
+              `    Select(driver.find_element(By.XPATH, f"//*[@aria-label=\\"${q}\\"]")).select_by_visible_text(${JSON.stringify(String(f.value))})`,
+            ].join("\n");
+          }
+          if (f.kind === "checkbox" || f.kind === "radio") {
+            const checked =
+              typeof f.value === "boolean"
+                ? f.value
+                : String(f.value) === "true";
+            return `    el = driver.find_element(By.XPATH, f"//*[@aria-label=\\"${q}\\"]"); el.click() if el.is_selected() != ${checked ? "True" : "False"} else None`;
+          }
+          return `    driver.find_element(By.XPATH, f"//*[@aria-label=\\"${q}\\"]").send_keys(${JSON.stringify(String(f.value))})`;
+        })
+        .join("\n");
+    }
+    case "upload":
+      return `    driver.find_element(By.XPATH, f"//*[@aria-label=\\"${escapePy(String(step.query))}\\"]").send_keys(${JSON.stringify(step.file_path)})`;
+    case "dialog":
+      return [
+        `    alert = driver.switch_to.alert`,
+        step.action === "accept"
+          ? `    alert.accept()`
+          : step.action === "accept_with_text"
+            ? `    alert.send_keys(${JSON.stringify(step.text ?? "")}); alert.accept()`
+            : `    alert.dismiss()`,
+      ].join("\n");
+    case "set_env": {
+      const lines: string[] = [];
+      if (step.viewport && typeof step.viewport === "object") {
+        const v = step.viewport as { width: number; height: number };
+        lines.push(`    driver.set_window_size(${v.width}, ${v.height})`);
+      }
+      lines.push(`    # set_env partially supported in Selenium — see selenium docs for offline/geolocation/colorScheme via CDP`);
+      return lines.join("\n");
+    }
+    case "switch_page":
+      return `    driver.switch_to.window(driver.window_handles[${step.index}])`;
+    case "evaluate":
+      return `    driver.execute_script(${JSON.stringify(step.script)})`;
     default:
       return `    # unsupported step kind: ${step.kind}`;
   }
@@ -238,6 +382,18 @@ function seleniumExpectLine(exp: Expect): string {
       return `    import re; assert re.search(${JSON.stringify(exp.pattern)}, driver.current_url)`;
     case "ref_in_state":
       return `    # ref_in_state ${JSON.stringify(exp.query)} → ${String(exp.state)}`;
+    case "no_console_errors":
+      return [
+        `    # no_console_errors — read browser logs via driver.get_log("browser")`,
+        `    errors = [l for l in driver.get_log("browser") if l.get("level") == "SEVERE"]`,
+        `    assert errors == [], f"console errors: {errors}"`,
+      ].join("\n");
+    case "no_failed_requests":
+      return `    # no_failed_requests — selenium has no built-in network capture. Enable selenium-wire or BiDi for this.`;
+    case "request_made":
+      return `    # request_made ${JSON.stringify(exp.url_pattern)} — use selenium-wire (driver.requests) or BiDi`;
+    case "response_status":
+      return `    # response_status ${JSON.stringify(exp.url_pattern)} == ${Number(exp.status)} — use selenium-wire (driver.requests) or BiDi`;
     default:
       return `    # unsupported expect kind: ${exp.kind}`;
   }
