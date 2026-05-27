@@ -22,6 +22,20 @@ MCP server. No fallback (D-024).
 - The scenario is too vague to scaffold — ask the user to clarify before
   calling.
 
+## Coverage
+
+The codegen handles every step kind and expect kind supported by
+`/verify-ui` (click, type, key, navigate, wait_for, hover, drag,
+fill_form, upload, dialog, set_env, switch_page, evaluate; text_visible,
+text_absent, url_matches, ref_in_state, no_console_errors,
+no_failed_requests, request_made, response_status).
+
+Playwright-test gets first-class translation for everything that has a
+direct Playwright API. Pytest+selenium covers the basics; expect kinds
+that need network introspection (no_failed_requests, request_made,
+response_status) emit a TODO referencing `selenium-wire` or BiDi, since
+upstream Selenium has no network-capture primitive.
+
 ## Inputs
 
 - `framework` — `playwright-test` | `vitest+playwright` | `pytest+selenium`.

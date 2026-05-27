@@ -1,83 +1,116 @@
 ---
 name: verify-ui
-description: Drive a real browser session through steps and assert expected outcomes; save evidence under ./.rolepod-uiproof/artifacts/. Use when a diff changes visible behavior and code-level tests do not prove it. v0.1 web only.
+description: Drive a real browser session through steps and assert expected outcomes — including console errors, network failures, and visual state. Save evidence under ./.rolepod-uiproof/artifacts/. Web only.
 ---
 
 # /verify-ui
 
 Single-backend skill. Calls **`rolepod_verify_ui_flow`** on the rolepod-uiproof
 MCP server and surfaces the structured result. No fallback (D-024) — if the
-tool is unavailable, this skill fails with a clear diagnostic so the caller
-(typically the user, or the parent `rolepod` plugin's `check-work` skill)
-can decide what to do next.
+tool is unavailable, this skill fails with a clear diagnostic.
 
 ## When to use
 
 - A diff changes user-visible behavior on a web target.
-- A URL is reachable (dev server is running, or the target is a deployed URL).
-- Code-level tests (unit, type-check, lint) do not prove the visible
-  outcome.
+- A URL is reachable (dev server is running, or the target is deployed).
+- You want to prove the UI works AND has no console errors / failed
+  requests / regressed visuals — code-level tests can't do that.
 
 ## When NOT to use
 
 - Backend-only diffs (no UI change).
 - Doc, config, or build-tool changes with no behavior surface.
-- No dev server / target available — ask the user to spin one up first
-  before invoking.
-- iOS / Android targets — mobile ships in v0.3 (`platform: 'ios' | 'android'`).
+- No dev server / target available — ask the user to spin one up first.
+- iOS / Android targets — mobile is partially supported (basic input);
+  console / network / set_env / evaluate are web-only.
 
 ## Modes
 
-- `mode: 'assert'` (default) — the assertions describe what the **feature
+- `mode: 'assert'` (default) — assertions describe what the **feature
   should do**; pass = feature works.
-- `mode: 'reproduce'` — the assertions describe what the **bug looks like**;
+- `mode: 'reproduce'` — assertions describe what the **bug looks like**;
   pass = bug reproduces. When `minimize: true` (default) the tool then
   removes steps one-by-one to find the shortest still-reproducing sequence
-  and writes a `replay-minimized.json` bundle next to `replay.json`.
+  and writes `replay-minimized.json` next to `replay.json`.
 
 ## Inputs
 
-- `target` — the URL to open (web only in v0.1).
-- `steps` — ordered UI actions. Each is one of:
-  - `{ kind: 'click', query: <accessible name substring> }`
-  - `{ kind: 'type', query: <accessible name substring>, text: <string>, clear_first?: boolean }`
-  - `{ kind: 'key', key: <e.g. 'Enter'> }`
-  - `{ kind: 'wait_for', condition: { kind, ... } }`
-  - `{ kind: 'navigate', url: <string> }`
-- `expect` — ordered assertions. Each is one of:
-  - `{ kind: 'text_visible', text: <string> }`
-  - `{ kind: 'text_absent', text: <string> }`
-  - `{ kind: 'url_matches', pattern: <regex string> }`
-  - `{ kind: 'ref_in_state', query: <accessible name substring>, state: 'visible' | 'enabled' | 'focused' }`
-- `capture` *(optional)* — defaults to `['screenshot']`. v0.1 only emits
-  screenshots and a replay bundle; HAR / console / video land in later
-  milestones.
-- `close_on_finish` *(optional)* — defaults to `true`.
+### `open` — context setup
+
+```json
+{ "platform": "web", "url": "https://...", "browser": "chromium" }
+```
+
+Optional: `viewport`, `headless`, `user_agent`, `locale`. UA / locale /
+timezone MUST be set here — they cannot change mid-session.
+
+### `steps` — UI actions in order
+
+Each step is one of:
+
+- `{ "kind": "click", "query": "Submit" }`
+- `{ "kind": "type", "query": "Email", "text": "x@y.com", "clear_first": true }`
+- `{ "kind": "key", "key": "Enter" }`
+- `{ "kind": "wait_for", "condition": { ... } }`
+- `{ "kind": "navigate", "url": "https://..." }`
+- `{ "kind": "hover", "query": "More" }`
+- `{ "kind": "drag", "from_query": "Card A", "to_query": "Column 2" }`
+- `{ "kind": "fill_form", "fields": [ { "query": "Name", "value": "Alice" }, { "query": "Subscribe", "value": true, "kind": "checkbox" } ] }`
+- `{ "kind": "upload", "query": "Avatar", "file_path": "/abs/path/to/file.png" }`
+- `{ "kind": "dialog", "action": "accept" }` — **place BEFORE the action that triggers the dialog**
+- `{ "kind": "set_env", "viewport": { "width": 375, "height": 812 } }` — also accepts offline, geolocation, color_scheme, reduced_motion, extra_headers, network_throttle, cpu_throttle
+- `{ "kind": "switch_page", "index": 1 }` — multi-page (popups, target=_blank)
+- `{ "kind": "evaluate", "script": "return document.title" }` — gated by `ROLEPOD_ALLOW_EVAL=1`
+
+### `expect` — assertions
+
+- `{ "kind": "text_visible", "text": "..." }`
+- `{ "kind": "text_absent", "text": "..." }`
+- `{ "kind": "url_matches", "pattern": "regex" }`
+- `{ "kind": "ref_in_state", "query": "Submit", "state": "enabled" }`
+- `{ "kind": "no_console_errors", "exclude_patterns": ["3rd-party.com"] }`
+- `{ "kind": "no_failed_requests", "exclude_patterns": ["/analytics"], "allow_4xx": false }`
+- `{ "kind": "request_made", "url_pattern": "/api/checkout", "method": "POST", "min_count": 1 }`
+- `{ "kind": "response_status", "url_pattern": "/api/me", "status": 200 }`
+
+### `capture` — evidence
+
+Default: `["screenshot"]`. Available:
+
+- `screenshot` — `final.png`
+- `console` — `console.json` (filtered errors+warnings, ring buffer up to 1000)
+- `har` — `network.har` (full HAR)
+- `video` — `videos/*.webm`
+- `trace` — `trace.zip` (Playwright trace; view with `npx playwright show-trace`)
+- `a11y_tree` — `a11y_tree.json` (final snapshot)
+
+### Defaults
+
+- `close_on_finish: true`
+- `minimize: true` (only consulted when `mode: 'reproduce'`)
 
 ## Outputs
 
-- `run_id` — folder name under `./.rolepod-uiproof/artifacts/`.
-- `passed` — boolean.
-- `failed_at_step` *(when not passed)* — 0-based step index.
-- `failure_reason` *(when not passed)* — human-readable explanation.
-- `evidence_paths` — `{ screenshots: string[], replay_bundle?: string }`.
-- `final_url_or_screen` — page URL at the end of the run.
+- `run_id`, `passed`, `failed_at_step`, `failure_reason`,
+  `final_url_or_screen`
+- `evidence_paths: { screenshots, replay_bundle, console?, a11y_tree?, har?, trace?, video? }`
+- `minimized` (only on `mode: 'reproduce'` + `passed: true` + `minimize: true`)
 
 ## Process
 
-1. Construct a `rolepod_verify_ui_flow` input from the user's intent:
-   - `mode: 'assert'`
-   - `open: { platform: 'web', url: <target> }`
-   - `steps`, `expect`, `capture`, `close_on_finish` per inputs above.
+1. Build the `rolepod_verify_ui_flow` input.
 2. Call the tool.
-3. Report the structured result. If `passed: false`, include
-   `failed_at_step`, `failure_reason`, and the screenshot path so the user
-   can inspect the failure.
+3. Report the structured result. On failure include `failed_at_step` +
+   `failure_reason` + relevant evidence paths (screenshot, console.json
+   if console errors caused the failure).
+
+## Default suggestion
+
+For ANY user-visible flow, default-include `no_console_errors` and
+`no_failed_requests` in `expect`. Real UI bugs surface as console errors
+or 5xx responses far more often than as wrong text.
 
 ## If the tool is unavailable
-
-The rolepod-uiproof MCP server is not registered or is not responding. Surface
-this plainly:
 
 > The `/verify-ui` skill needs the **rolepod-uiproof** MCP server, which is
 > not currently available. Confirm the plugin is installed and try again,
@@ -85,50 +118,84 @@ this plainly:
 
 Do **not** attempt this work via Playwright MCP, Chrome DevTools MCP, or
 any other backend from inside this skill. Multi-backend routing is the
-job of the parent `rolepod` plugin's `check-work` / `debug-issue` skills
-(D-024).
+job of the parent `rolepod` plugin's `check-work` / `debug-issue` skills.
 
 ## Examples
 
-### Success — verify a search result on example.com
+### Success — verify checkout flow with no errors
 
-User: "Verify that opening https://example.com shows the heading 'Example
-Domain' and links to iana.org."
-
-Skill invokes `rolepod_verify_ui_flow` with:
+User: "Verify https://shop.example.com/checkout works — fill the form,
+submit, expect a success page and no errors."
 
 ```json
 {
   "mode": "assert",
-  "open": { "platform": "web", "url": "https://example.com" },
-  "steps": [],
+  "open": { "platform": "web", "url": "https://shop.example.com/checkout" },
+  "steps": [
+    { "kind": "fill_form", "fields": [
+      { "query": "Name", "value": "Alice" },
+      { "query": "Email", "value": "alice@example.com" },
+      { "query": "Card", "value": "4242 4242 4242 4242" }
+    ]},
+    { "kind": "click", "query": "Pay" },
+    { "kind": "wait_for", "condition": { "kind": "text_visible", "text": "Thank you" } }
+  ],
   "expect": [
-    { "kind": "text_visible", "text": "Example Domain" },
-    { "kind": "text_visible", "text": "More information" }
-  ]
+    { "kind": "text_visible", "text": "Thank you" },
+    { "kind": "no_console_errors" },
+    { "kind": "no_failed_requests", "exclude_patterns": ["/analytics"] },
+    { "kind": "response_status", "url_pattern": "/api/checkout", "status": 200 }
+  ],
+  "capture": ["screenshot", "console", "har"]
 }
 ```
 
-Returns:
+### Failure with evidence
+
+When `no_console_errors` fails, the result surfaces:
 
 ```json
 {
-  "run_id": "verify_20260524T101512_a1b2c3d4",
-  "passed": true,
+  "passed": false,
+  "failure_reason": "Expectations failed: expect[1] no_console_errors",
   "evidence_paths": {
-    "screenshots": [".rolepod-uiproof/artifacts/verify_…/final.png"],
-    "replay_bundle": ".rolepod-uiproof/artifacts/verify_…/replay.json"
-  },
-  "final_url_or_screen": "https://example.com/"
+    "screenshots": ["…/final.png"],
+    "console": "…/console.json"
+  }
 }
 ```
 
-### Failure — MCP server not available
+Open `console.json` to inspect the errors.
 
-The MCP server is not registered. The skill returns:
+### Dialog handling
 
-> The `/verify-ui` skill needs the **rolepod-uiproof** MCP server, which is
-> not currently available. Confirm the plugin is installed and try again.
+User: "When the user clicks Delete, a confirm dialog appears. Verify
+that accepting it deletes the row."
 
-No other backend is attempted. The caller decides whether to escalate to
-the parent rolepod plugin's `check-work` skill.
+```json
+{
+  "steps": [
+    { "kind": "dialog", "action": "accept" },
+    { "kind": "click", "query": "Delete" },
+    { "kind": "wait_for", "condition": { "kind": "text_absent", "text": "Row A" } }
+  ],
+  "expect": [ { "kind": "text_absent", "text": "Row A" } ]
+}
+```
+
+The `dialog` step arms a one-shot handler; the *next* trigger (the click)
+fires it. Un-armed dialogs are auto-dismissed.
+
+### Responsive + dark mode
+
+User: "Verify mobile dark-mode layout."
+
+```json
+{
+  "steps": [
+    { "kind": "set_env", "viewport": { "width": 375, "height": 812 }, "color_scheme": "dark" }
+  ],
+  "expect": [ { "kind": "text_visible", "text": "Menu" } ],
+  "capture": ["screenshot"]
+}
+```
