@@ -6,6 +6,7 @@ import {
   type ScaffoldE2eInput,
 } from "../../schema/tools.js";
 import { RolepodMcpError } from "../../util/errors.js";
+import { writeManifest } from "../../util/manifest.js";
 import { ok, safeHandler } from "../result.js";
 import type { ToolModule } from "../types.js";
 
@@ -25,7 +26,11 @@ export const scaffoldE2eTool: ToolModule<typeof scaffoldE2eShape> = {
   inputShape: scaffoldE2eShape,
   build(ctx) {
     return safeHandler(async (args: ScaffoldE2eInput) => {
-      const { runId, runDir } = await ctx.store.startRun("scaffold", { skill: "scaffold-e2e" });
+      const startedAt = new Date().toISOString();
+      const { runId, runDir, skill } = await ctx.store.startRun(
+        "scaffold",
+        { skill: "scaffold-e2e" },
+      );
       const slug = slugify(args.scenario_nl);
       const bundle = args.recorded_bundle
         ? await loadReplay(args.recorded_bundle)
@@ -72,6 +77,22 @@ export const scaffoldE2eTool: ToolModule<typeof scaffoldE2eShape> = {
 
       const path = await ctx.store.writeReport(runDir, filename, body);
 
+      const manifestPath = await writeManifest({
+        runDir,
+        skill,
+        phase: "build",
+        status: "pass",
+        summary: `generated ${args.framework} test "${filename}" from ${bundle ? "replay bundle" : "scenario"}`,
+        startedAt,
+        finishedAt: new Date().toISOString(),
+        artifacts: [{ type: "test_file", path }],
+        metadata: {
+          framework: args.framework,
+          language,
+          from_replay_bundle: Boolean(bundle),
+        },
+      });
+
       return ok({
         run_id: runId,
         test_file_path: path,
@@ -79,6 +100,7 @@ export const scaffoldE2eTool: ToolModule<typeof scaffoldE2eShape> = {
         dependencies,
         setup_notes: setupNotes,
         from_replay_bundle: Boolean(bundle),
+        ...(manifestPath ? { manifest: manifestPath } : {}),
       });
     });
   },

@@ -15,6 +15,7 @@ import type {
 } from "../../engine/Engine.js";
 import { ddmin } from "../../replay/minimize.js";
 import { RolepodMcpError } from "../../util/errors.js";
+import { writeManifest, type ManifestArtifact } from "../../util/manifest.js";
 import { ok, safeHandler } from "../result.js";
 import type { ToolContext, ToolModule } from "../types.js";
 
@@ -35,7 +36,11 @@ export const verifyUiFlowTool: ToolModule<typeof verifyUiFlowShape> = {
   inputShape: verifyUiFlowShape,
   build(ctx) {
     return safeHandler(async (args: VerifyUiFlowInput) => {
-      const { runId, runDir } = await ctx.store.startRun("verify", { skill: "verify-ui" });
+      const startedAt = new Date().toISOString();
+      const { runId, runDir, skill } = await ctx.store.startRun(
+        "verify",
+        { skill: "verify-ui" },
+      );
 
       const initial = await runFlow(ctx, args, args.steps, runDir, {
         captureEvidence: true,
@@ -64,10 +69,55 @@ export const verifyUiFlowTool: ToolModule<typeof verifyUiFlowShape> = {
         };
       }
 
+      const manifestPath = await writeManifest({
+        runDir,
+        skill,
+        phase: "verify",
+        status: initial.passed ? "pass" : "fail",
+        summary: buildVerifySummary(args, initial),
+        startedAt,
+        finishedAt: new Date().toISOString(),
+        artifacts: flattenVerifyEvidence(initial.evidence),
+        metadata: {
+          mode: args.mode,
+          step_count: args.steps.length,
+          expect_count: args.expect.length,
+          ...(initial.finalUrl !== undefined ? { final_url: initial.finalUrl } : {}),
+        },
+      });
+      if (manifestPath) result.manifest = manifestPath;
+
       return ok(result);
     });
   },
 };
+
+function buildVerifySummary(
+  args: VerifyUiFlowInput,
+  outcome: RunOutcome,
+): string {
+  const stepCount = args.steps.length;
+  const expectCount = args.expect.length;
+  if (outcome.passed) {
+    return `${stepCount} step(s), ${expectCount} expect(s) passed`;
+  }
+  if (outcome.failedAtStep !== undefined) {
+    return `failed at step ${outcome.failedAtStep}: ${outcome.failureReason ?? "unknown"}`;
+  }
+  return `failed: ${outcome.failureReason ?? "unknown"}`;
+}
+
+function flattenVerifyEvidence(ev: Evidence): ManifestArtifact[] {
+  const out: ManifestArtifact[] = [];
+  for (const s of ev.screenshots) out.push({ type: "screenshot", path: s });
+  if (ev.replay_bundle) out.push({ type: "replay_bundle", path: ev.replay_bundle });
+  if (ev.console) out.push({ type: "console", path: ev.console });
+  if (ev.a11y_tree) out.push({ type: "a11y_tree", path: ev.a11y_tree });
+  if (ev.har) out.push({ type: "har", path: ev.har });
+  if (ev.trace) out.push({ type: "trace", path: ev.trace });
+  if (ev.video) for (const v of ev.video) out.push({ type: "video", path: v });
+  return out;
+}
 
 // ---------------------------------------------------------------------------
 // Core single-run logic — shared by the initial run and every minimization

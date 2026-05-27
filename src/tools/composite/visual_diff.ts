@@ -10,6 +10,7 @@ import {
   type VisualDiffInput,
 } from "../../schema/tools.js";
 import { RolepodMcpError } from "../../util/errors.js";
+import { writeManifest, type ManifestArtifact } from "../../util/manifest.js";
 import { ok, safeHandler } from "../result.js";
 import type { ToolModule } from "../types.js";
 
@@ -20,7 +21,11 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
   inputShape: visualDiffShape,
   build(ctx) {
     return safeHandler(async (args: VisualDiffInput) => {
-      const { runId, runDir } = await ctx.store.startRun("vdiff", { skill: "visual-diff" });
+      const startedAt = new Date().toISOString();
+      const { runId, runDir, skill } = await ctx.store.startRun(
+        "vdiff",
+        { skill: "visual-diff" },
+      );
       const session = await ctx.registry.open({
         ...args.open,
         ...(args.viewport ? { viewport: args.viewport } : {}),
@@ -52,6 +57,20 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
             `${args.baseline_id}.png`,
             buf,
           );
+          const manifestPath = await writeManifest({
+            runDir,
+            skill,
+            phase: "verify",
+            status: "pass",
+            summary: `baseline "${args.baseline_id}" seeded from current capture`,
+            startedAt,
+            finishedAt: new Date().toISOString(),
+            artifacts: [
+              { type: "baseline", path: baselinePath },
+              { type: "screenshot", path: currentPath },
+            ],
+            metadata: { baseline_id: args.baseline_id, seeded: true },
+          });
           return ok({
             run_id: runId,
             baseline_id: args.baseline_id,
@@ -59,6 +78,7 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
             passed: true,
             baseline_path: baselinePath,
             current_path: currentPath,
+            ...(manifestPath ? { manifest: manifestPath } : {}),
             note: "Baseline did not exist — current capture saved as the new baseline.",
           });
         }
@@ -92,6 +112,7 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
         );
         const total = baseline.width * baseline.height;
         const diffPct = diffPixels / total;
+        const passed = diffPct <= args.threshold_pct;
 
         const diffImagePath = await ctx.store.writeBytes(
           runDir,
@@ -99,16 +120,40 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
           PNG.sync.write(diff),
         );
 
+        const artifacts: ManifestArtifact[] = [
+          { type: "baseline", path: baselinePath },
+          { type: "screenshot", path: currentPath },
+          { type: "diff", path: diffImagePath },
+        ];
+        const manifestPath = await writeManifest({
+          runDir,
+          skill,
+          phase: "verify",
+          status: passed ? "pass" : "fail",
+          summary: `diff ${(diffPct * 100).toFixed(3)}% vs baseline "${args.baseline_id}" (threshold ${(args.threshold_pct * 100).toFixed(3)}%)`,
+          startedAt,
+          finishedAt: new Date().toISOString(),
+          artifacts,
+          metadata: {
+            baseline_id: args.baseline_id,
+            diff_pct: Number(diffPct.toFixed(6)),
+            diff_pixels: diffPixels,
+            total_pixels: total,
+            threshold_pct: args.threshold_pct,
+          },
+        });
+
         return ok({
           run_id: runId,
           baseline_id: args.baseline_id,
           diff_pct: Number(diffPct.toFixed(6)),
           diff_pixels: diffPixels,
           total_pixels: total,
-          passed: diffPct <= args.threshold_pct,
+          passed,
           baseline_path: baselinePath,
           current_path: currentPath,
           diff_image_path: diffImagePath,
+          ...(manifestPath ? { manifest: manifestPath } : {}),
         });
       } finally {
         if (args.close_on_finish) {
