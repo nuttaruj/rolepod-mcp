@@ -284,6 +284,15 @@ function evaluateExpect(
           return node.state?.focused === true;
       }
     }
+    // v0.5 — observed-state expects. Wired up in C6.
+    case "no_console_errors":
+    case "no_failed_requests":
+    case "request_made":
+    case "response_status":
+      throw new RolepodMcpError(
+        "engine_error",
+        `expect kind "${exp.kind}" requires v0.5 observability wiring (pending C6).`,
+      );
   }
 }
 
@@ -297,6 +306,14 @@ function describeExpect(exp: VerifyUiFlowInput["expect"][number]): string {
       return `url_matches /${exp.pattern}/`;
     case "ref_in_state":
       return `ref_in_state "${exp.query}" → ${exp.state}`;
+    case "no_console_errors":
+      return "no_console_errors";
+    case "no_failed_requests":
+      return "no_failed_requests";
+    case "request_made":
+      return `request_made ${exp.method ?? ""} ${exp.url_pattern}`.trim();
+    case "response_status":
+      return `response_status ${exp.url_pattern} = ${exp.status}`;
   }
 }
 

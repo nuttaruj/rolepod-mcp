@@ -151,6 +151,195 @@ export const browserNavigateSchema = z.object(browserNavigateShape);
 export type BrowserNavigateInput = z.infer<typeof browserNavigateSchema>;
 
 // ---------------------------------------------------------------------------
+// v0.5 atomic additions
+// ---------------------------------------------------------------------------
+
+export const browserHoverShape = {
+  session_id: z.string().min(1),
+  ref: z.string().min(1),
+} as const;
+export const browserHoverSchema = z.object(browserHoverShape);
+export type BrowserHoverInput = z.infer<typeof browserHoverSchema>;
+
+export const browserDragShape = {
+  session_id: z.string().min(1),
+  from_ref: z.string().min(1),
+  to_ref: z.string().min(1),
+} as const;
+export const browserDragSchema = z.object(browserDragShape);
+export type BrowserDragInput = z.infer<typeof browserDragSchema>;
+
+export const fillFieldKindSchema = z.enum([
+  "input",
+  "select",
+  "checkbox",
+  "radio",
+]);
+
+export const fillFormFieldSchema = z.object({
+  ref: z.string().min(1),
+  value: z.union([z.string(), z.boolean()]),
+  kind: fillFieldKindSchema.optional(),
+});
+
+export const browserFillFormShape = {
+  session_id: z.string().min(1),
+  fields: z.array(fillFormFieldSchema).min(1),
+} as const;
+export const browserFillFormSchema = z.object(browserFillFormShape);
+export type BrowserFillFormInput = z.infer<typeof browserFillFormSchema>;
+
+export const browserUploadFileShape = {
+  session_id: z.string().min(1),
+  ref: z.string().min(1),
+  file_path: z.string().min(1),
+} as const;
+export const browserUploadFileSchema = z.object(browserUploadFileShape);
+export type BrowserUploadFileInput = z.infer<typeof browserUploadFileSchema>;
+
+export const dialogActionSchema = z.enum([
+  "accept",
+  "dismiss",
+  "accept_with_text",
+]);
+
+export const browserHandleDialogShape = {
+  session_id: z.string().min(1),
+  action: dialogActionSchema,
+  /** Only used when action='accept_with_text'. */
+  text: z.string().optional(),
+  /**
+   * Arming behavior: registers a one-shot handler for the NEXT dialog
+   * raised on the page. Call this BEFORE the action that triggers the
+   * dialog (e.g. before clicking the button that calls `confirm()`).
+   * Default 30s if no dialog appears, handler is auto-removed.
+   */
+  timeout_ms: z.number().int().positive().optional(),
+} as const;
+export const browserHandleDialogSchema = z.object(browserHandleDialogShape);
+export type BrowserHandleDialogInput = z.infer<typeof browserHandleDialogSchema>;
+
+export const consoleLevelSchema = z.enum([
+  "error",
+  "warning",
+  "info",
+  "log",
+  "debug",
+  "trace",
+]);
+
+export const browserConsoleShape = {
+  session_id: z.string().min(1),
+  /** Filter to only these levels. Default: errors+warnings. */
+  levels: z.array(consoleLevelSchema).optional(),
+  /** Substring match on message text. */
+  contains: z.string().optional(),
+  /** Drop all buffered messages after returning. */
+  clear: z.boolean().default(false),
+  /** Cap on returned messages (artifact still holds full ring buffer). */
+  limit: z.number().int().positive().max(1000).default(50),
+} as const;
+export const browserConsoleSchema = z.object(browserConsoleShape);
+export type BrowserConsoleInput = z.infer<typeof browserConsoleSchema>;
+
+export const browserNetworkShape = {
+  session_id: z.string().min(1),
+  /** Substring or regex (per `pattern_kind`) match on URL. */
+  url_pattern: z.string().optional(),
+  pattern_kind: z.enum(["substring", "regex"]).default("substring"),
+  method: z.string().optional(),
+  /** Inclusive range — e.g. `{min: 400, max: 599}` for any error response. */
+  status_range: z
+    .object({
+      min: z.number().int().min(100).max(599),
+      max: z.number().int().min(100).max(599),
+    })
+    .optional(),
+  only_failed: z.boolean().default(false),
+  /** Write the full HAR file for this session to artifacts/{runId}/network.har. */
+  export_har: z.boolean().default(false),
+  /** Drop buffered entries after returning. */
+  clear: z.boolean().default(false),
+  limit: z.number().int().positive().max(1000).default(50),
+} as const;
+export const browserNetworkSchema = z.object(browserNetworkShape);
+export type BrowserNetworkInput = z.infer<typeof browserNetworkSchema>;
+
+export const networkPresetSchema = z.enum([
+  "offline",
+  "slow-3g",
+  "fast-3g",
+  "slow-4g",
+  "fast-4g",
+  "no-throttling",
+]);
+
+export const geolocationSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  accuracy: z.number().nonnegative().optional(),
+});
+
+/**
+ * Runtime environment mutation. Merges resize+emulate. Fields here are
+ * the ones Playwright supports changing AFTER context creation. Things
+ * that must be set at context-creation time (user_agent, locale,
+ * timezone) live on `browser_open` and cannot be changed mid-session.
+ *
+ * `network_throttle` and `cpu_throttle` are chromium-only (CDP-backed).
+ */
+export const browserSetEnvShape = {
+  session_id: z.string().min(1),
+  viewport: viewportSchema.optional(),
+  offline: z.boolean().optional(),
+  geolocation: geolocationSchema.optional(),
+  color_scheme: z.enum(["light", "dark", "no-preference"]).optional(),
+  reduced_motion: z.enum(["reduce", "no-preference"]).optional(),
+  extra_headers: z.record(z.string(), z.string()).optional(),
+  network_throttle: networkPresetSchema.optional(),
+  /** CPU slowdown multiplier (1 = no throttle, 4 = 4x slower). Chromium only. */
+  cpu_throttle: z.number().min(1).max(20).optional(),
+} as const;
+export const browserSetEnvSchema = z.object(browserSetEnvShape);
+export type BrowserSetEnvInput = z.infer<typeof browserSetEnvSchema>;
+
+/**
+ * Execute JavaScript in the page context. GATED: server must be started
+ * with env `ROLEPOD_ALLOW_EVAL=1`, otherwise the tool returns an
+ * `eval_disabled` error. Equivalent to arbitrary code execution — only
+ * enable for trusted automation scenarios.
+ *
+ * `script` is the body of an async function whose return value is sent
+ * back as `result`. Use `args` to pass JSON-serialisable values.
+ */
+export const browserEvaluateShape = {
+  session_id: z.string().min(1),
+  script: z.string().min(1),
+  args: z.array(z.unknown()).optional(),
+} as const;
+export const browserEvaluateSchema = z.object(browserEvaluateShape);
+export type BrowserEvaluateInput = z.infer<typeof browserEvaluateSchema>;
+
+/**
+ * Multi-page support. A session owns one browser context, which may
+ * have multiple pages (e.g. when an OAuth popup or `target="_blank"`
+ * link opens). The active page index is sticky — all subsequent
+ * tool calls operate on it until `switch_page` changes it.
+ */
+export const browserPagesShape = {
+  session_id: z.string().min(1),
+} as const;
+export const browserPagesSchema = z.object(browserPagesShape);
+export type BrowserPagesInput = z.infer<typeof browserPagesSchema>;
+
+export const browserSwitchPageShape = {
+  session_id: z.string().min(1),
+  index: z.number().int().nonnegative(),
+} as const;
+export const browserSwitchPageSchema = z.object(browserSwitchPageShape);
+export type BrowserSwitchPageInput = z.infer<typeof browserSwitchPageSchema>;
+
+// ---------------------------------------------------------------------------
 // Composite verify_ui_flow
 //
 // Both `mode: 'assert'` and `mode: 'reproduce'` are implemented (D-025).
@@ -159,6 +348,12 @@ export type BrowserNavigateInput = z.infer<typeof browserNavigateSchema>;
 // output carrying the surviving step list and a `replay-minimized.json`
 // artifact path.
 // ---------------------------------------------------------------------------
+
+export const verifyFillFieldSchema = z.object({
+  query: z.string(),
+  value: z.union([z.string(), z.boolean()]),
+  kind: fillFieldKindSchema.optional(),
+});
 
 export const verifyStepSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("click"), query: z.string() }),
@@ -171,6 +366,43 @@ export const verifyStepSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("key"), key: z.string() }),
   z.object({ kind: z.literal("wait_for"), condition: waitConditionSchema }),
   z.object({ kind: z.literal("navigate"), url: z.string().url() }),
+  // v0.5 additions
+  z.object({ kind: z.literal("hover"), query: z.string() }),
+  z.object({
+    kind: z.literal("drag"),
+    from_query: z.string(),
+    to_query: z.string(),
+  }),
+  z.object({
+    kind: z.literal("fill_form"),
+    fields: z.array(verifyFillFieldSchema).min(1),
+  }),
+  z.object({
+    kind: z.literal("upload"),
+    query: z.string(),
+    file_path: z.string().min(1),
+  }),
+  z.object({
+    kind: z.literal("dialog"),
+    action: dialogActionSchema,
+    text: z.string().optional(),
+  }),
+  z.object({
+    kind: z.literal("set_env"),
+    viewport: viewportSchema.optional(),
+    offline: z.boolean().optional(),
+    geolocation: geolocationSchema.optional(),
+    color_scheme: z.enum(["light", "dark", "no-preference"]).optional(),
+    reduced_motion: z.enum(["reduce", "no-preference"]).optional(),
+    extra_headers: z.record(z.string(), z.string()).optional(),
+    network_throttle: networkPresetSchema.optional(),
+    cpu_throttle: z.number().min(1).max(20).optional(),
+  }),
+  z.object({
+    kind: z.literal("switch_page"),
+    index: z.number().int().nonnegative(),
+  }),
+  z.object({ kind: z.literal("evaluate"), script: z.string().min(1) }),
 ]);
 
 export const verifyExpectSchema = z.discriminatedUnion("kind", [
@@ -182,6 +414,28 @@ export const verifyExpectSchema = z.discriminatedUnion("kind", [
     query: z.string(),
     state: z.enum(["visible", "enabled", "focused"]),
   }),
+  // v0.5 additions
+  z.object({
+    kind: z.literal("no_console_errors"),
+    exclude_patterns: z.array(z.string()).optional(),
+  }),
+  z.object({
+    kind: z.literal("no_failed_requests"),
+    exclude_patterns: z.array(z.string()).optional(),
+    /** When true, only 5xx counts as a failure. Default false (4xx + 5xx). */
+    allow_4xx: z.boolean().optional(),
+  }),
+  z.object({
+    kind: z.literal("request_made"),
+    url_pattern: z.string(),
+    method: z.string().optional(),
+    min_count: z.number().int().positive().optional(),
+  }),
+  z.object({
+    kind: z.literal("response_status"),
+    url_pattern: z.string(),
+    status: z.number().int().min(100).max(599),
+  }),
 ]);
 
 export const captureKindSchema = z.enum([
@@ -190,6 +444,7 @@ export const captureKindSchema = z.enum([
   "console",
   "a11y_tree",
   "video",
+  "trace",
 ]);
 
 export const verifyUiFlowShape = {
@@ -301,6 +556,19 @@ export const ToolNames = {
   browserWaitFor: "rolepod_browser_wait_for",
   browserScreenshot: "rolepod_browser_screenshot",
   browserNavigate: "rolepod_browser_navigate",
+  // v0.5 atomics
+  browserHover: "rolepod_browser_hover",
+  browserDrag: "rolepod_browser_drag",
+  browserFillForm: "rolepod_browser_fill_form",
+  browserUploadFile: "rolepod_browser_upload_file",
+  browserHandleDialog: "rolepod_browser_handle_dialog",
+  browserConsole: "rolepod_browser_console",
+  browserNetwork: "rolepod_browser_network",
+  browserSetEnv: "rolepod_browser_set_env",
+  browserEvaluate: "rolepod_browser_evaluate",
+  browserPages: "rolepod_browser_pages",
+  browserSwitchPage: "rolepod_browser_switch_page",
+  // composite
   verifyUiFlow: "rolepod_verify_ui_flow",
   auditA11y: "rolepod_audit_a11y",
   visualDiff: "rolepod_visual_diff",

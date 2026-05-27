@@ -164,4 +164,112 @@ export const toolMetadata: Record<ToolName, ToolMetadata> = {
       openWorldHint: true,
     },
   },
+
+  // ---------- v0.5 atomic additions ----------
+  [ToolNames.browserHover]: {
+    title: "Hover Element",
+    annotations: {
+      title: "Hover Element",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+  },
+  [ToolNames.browserDrag]: {
+    title: "Drag Element",
+    annotations: {
+      title: "Drag Element",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+  },
+  [ToolNames.browserFillForm]: {
+    title: "Fill Form (Batch)",
+    annotations: {
+      title: "Fill Form (Batch)",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+  },
+  [ToolNames.browserUploadFile]: {
+    title: "Upload File",
+    annotations: {
+      title: "Upload File",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+  },
+  [ToolNames.browserHandleDialog]: {
+    title: "Pre-arm Dialog Handler",
+    annotations: {
+      title: "Pre-arm Dialog Handler",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
+  },
+  [ToolNames.browserConsole]: {
+    title: "Inspect Console Logs",
+    annotations: {
+      title: "Inspect Console Logs",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
+  },
+  [ToolNames.browserNetwork]: {
+    title: "Inspect Network Requests",
+    annotations: {
+      title: "Inspect Network Requests",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
+  },
+  [ToolNames.browserSetEnv]: {
+    title: "Set Browser Environment",
+    annotations: {
+      title: "Set Browser Environment",
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
+  [ToolNames.browserEvaluate]: {
+    title: "Evaluate JavaScript (gated; arbitrary code execution)",
+    annotations: {
+      title: "Evaluate JavaScript",
+      // Arbitrary code execution in the page context. Gated by
+      // ROLEPOD_ALLOW_EVAL=1 server-side. Always treat as destructive.
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+  },
+  [ToolNames.browserPages]: {
+    title: "List Open Pages",
+    annotations: {
+      title: "List Open Pages",
+      readOnlyHint: true,
+      openWorldHint: false,
+    },
+  },
+  [ToolNames.browserSwitchPage]: {
+    title: "Switch Active Page",
+    annotations: {
+      title: "Switch Active Page",
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
 };
