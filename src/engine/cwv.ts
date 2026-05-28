@@ -76,8 +76,8 @@ export const DEFAULT_CWV_THRESHOLDS: CwvThresholds = {
 
 export async function readCwvMetrics(page: Page): Promise<CwvMetrics> {
   return await page.evaluate(() => {
-    const s = (window as unknown as { __rolepodCwv?: CwvMetrics }).__rolepodCwv;
-    return s ?? { lcp: 0, inp: 0, cls: 0, samples: [] };
+    const g = globalThis as unknown as { __rolepodCwv?: CwvMetrics };
+    return g.__rolepodCwv ?? { lcp: 0, inp: 0, cls: 0, samples: [] };
   });
 }
 

@@ -159,35 +159,50 @@ export const auditSeoTool: ToolModule<typeof auditSeoShape> = {
 };
 
 /**
- * Runs inside the page context. Plain-DOM extraction — keeps deps zero
- * on the page side and keeps the SEO snapshot reproducible from any
- * Playwright-driven session.
+ * Runs inside the page context via page.evaluate. tsconfig does not
+ * include the DOM lib (to keep DOM globals out of Node-side code), so
+ * we declare a minimal structural shape for the DOM subset we actually
+ * use, and cast `globalThis.document` to it. The function body still
+ * type-checks; it just refers to our locally-narrowed types.
  */
 function extractSeoSnapshot(): SeoSnapshot {
-  const text = (sel: string) =>
-    document.querySelector(sel)?.textContent?.trim() ?? null;
+  type El = {
+    textContent: string | null;
+    content?: string;
+    getAttribute(name: string): string | null;
+  };
+  type Doc = {
+    documentElement: { getAttribute(name: string): string | null };
+    querySelector(s: string): El | null;
+    querySelectorAll(s: string): ArrayLike<El>;
+  };
+  const doc = (globalThis as unknown as { document: Doc }).document;
+  const all = (s: string): El[] => {
+    const list = doc.querySelectorAll(s);
+    const out: El[] = [];
+    for (let i = 0; i < list.length; i++) out.push(list[i]!);
+    return out;
+  };
+
+  const text = (sel: string) => doc.querySelector(sel)?.textContent?.trim() ?? null;
   const attr = (sel: string, name: string) =>
-    document.querySelector(sel)?.getAttribute(name) ?? null;
+    doc.querySelector(sel)?.getAttribute(name) ?? null;
   const meta = (selector: string) =>
-    (document.querySelector(`meta[${selector}]`) as HTMLMetaElement | null)?.content?.trim() ?? null;
+    doc.querySelector(`meta[${selector}]`)?.content?.trim() ?? null;
 
   const og: Record<string, string> = {};
-  for (const el of Array.from(document.querySelectorAll('meta[property^="og:"]'))) {
+  for (const el of all('meta[property^="og:"]')) {
     const prop = el.getAttribute("property");
-    const content = (el as HTMLMetaElement).content;
-    if (prop && content) og[prop] = content;
+    if (prop && el.content) og[prop] = el.content;
   }
   const tw: Record<string, string> = {};
-  for (const el of Array.from(document.querySelectorAll('meta[name^="twitter:"]'))) {
+  for (const el of all('meta[name^="twitter:"]')) {
     const name = el.getAttribute("name");
-    const content = (el as HTMLMetaElement).content;
-    if (name && content) tw[name] = content;
+    if (name && el.content) tw[name] = el.content;
   }
 
   const ld: Array<{ raw: string; parsed: unknown; parse_error?: string }> = [];
-  for (const el of Array.from(
-    document.querySelectorAll('script[type="application/ld+json"]'),
-  )) {
+  for (const el of all('script[type="application/ld+json"]')) {
     const raw = (el.textContent ?? "").trim();
     if (!raw) continue;
     try {
@@ -198,9 +213,7 @@ function extractSeoSnapshot(): SeoSnapshot {
   }
 
   const hreflang: Array<{ lang: string | null; href: string | null }> = [];
-  for (const el of Array.from(
-    document.querySelectorAll('link[rel="alternate"][hreflang]'),
-  )) {
+  for (const el of all('link[rel="alternate"][hreflang]')) {
     hreflang.push({
       lang: el.getAttribute("hreflang"),
       href: el.getAttribute("href"),
@@ -210,10 +223,8 @@ function extractSeoSnapshot(): SeoSnapshot {
   return {
     title: text("title"),
     meta_description: meta('name="description"'),
-    h1_texts: Array.from(document.querySelectorAll("h1")).map(
-      (el) => el.textContent?.trim() ?? "",
-    ),
-    html_lang: document.documentElement.getAttribute("lang"),
+    h1_texts: all("h1").map((el) => el.textContent?.trim() ?? ""),
+    html_lang: doc.documentElement.getAttribute("lang"),
     viewport: meta('name="viewport"'),
     canonical: attr('link[rel="canonical"]', "href"),
     robots: meta('name="robots"'),

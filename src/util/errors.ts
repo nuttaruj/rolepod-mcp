@@ -16,7 +16,9 @@ export type ErrorCode =
   | "not_implemented_in_v01"
   | "not_implemented_in_v02"
   | "invalid_input"
-  | "engine_error";
+  | "engine_error"
+  | "cwv_unsupported_browser"
+  | "har_unavailable";
 
 export class RolepodMcpError extends Error {
   override readonly name = "RolepodMcpError";
