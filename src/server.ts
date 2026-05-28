@@ -24,6 +24,7 @@ import { browserTypeTool } from "./tools/atomic/browser_type.js";
 import { browserUploadFileTool } from "./tools/atomic/browser_upload_file.js";
 import { browserWaitForTool } from "./tools/atomic/browser_wait_for.js";
 import { auditA11yTool } from "./tools/composite/audit_a11y.js";
+import { auditPageBudgetTool } from "./tools/composite/audit_page_budget.js";
 import { extractUiStateTool } from "./tools/composite/extract_ui_state.js";
 import { measureCwvTool } from "./tools/composite/measure_cwv.js";
 import { scaffoldE2eTool } from "./tools/composite/scaffold_e2e.js";
@@ -132,6 +133,7 @@ export function buildServer(
     extractUiStateTool,
     // v0.7 measurement surface
     measureCwvTool,
+    auditPageBudgetTool,
   ] as const;
 
   for (const t of tools) {
