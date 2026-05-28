@@ -10,8 +10,8 @@
     {
       "name": "rolepod-uiproof",
       "source": "./",
-      "description": "26 MCP tools (21 atomic browser/mobile primitives + 5 composite workflows) + 5 user-invocable skills. v0.6 adds Extension Protocol v1 support — works standalone today, becomes the verify-phase UI provider when installed alongside the `rolepod` parent plugin (evidence routes to `.rolepod/evidence/` with `manifest.json`). Replaces chrome-devtools-mcp and playwright-mcp for UI testing. Web production-ready via Playwright; mobile (iOS/Android) via Appium scaffolded — see `rolepod-uiproof doctor` for readiness.",
-      "version": "0.6.0",
+      "description": "26 MCP tools (21 atomic browser/mobile primitives + 5 composite workflows) + 5 user-invocable skills. Works standalone today; pair with the `rolepod` parent plugin (detected via the marker file `<git-root>/.rolepod/parent-active`) and uiproof becomes the verify-phase UI provider — evidence routes to `<git-root>/.rolepod/evidence/` with `manifest.json` per Extension Protocol v1. Replaces chrome-devtools-mcp and playwright-mcp for UI testing. Web production-ready via Playwright; mobile (iOS/Android) via Appium scaffolded — see `rolepod-uiproof doctor` for readiness.",
+      "version": "0.6.1",
       "author": {
         "name": "nuttaruj"
       },

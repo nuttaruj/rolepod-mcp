@@ -1,8 +1,8 @@
 {
   "name": "rolepod-uiproof",
   "displayName": "Rolepod UIProof",
-  "version": "0.6.0",
-  "description": "Multi-platform UI / mobile automation MCP server + 5 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e, check-errors) for AI coding agents. v0.6 adds Extension Protocol v1 — works standalone today, becomes the verify-phase UI provider when paired with the `rolepod` parent plugin (evidence routes to `.rolepod/evidence/` with `manifest.json`). Replaces chrome-devtools-mcp and playwright-mcp.",
+  "version": "0.6.1",
+  "description": "Multi-platform UI / mobile automation MCP server + 5 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e, check-errors) for AI coding agents. Works standalone today; pair with the `rolepod` parent plugin (detected via the marker file `<git-root>/.rolepod/parent-active`) and uiproof becomes the verify-phase UI provider — evidence routes to `<git-root>/.rolepod/evidence/` with `manifest.json` per Extension Protocol v1. Replaces chrome-devtools-mcp and playwright-mcp.",
   "author": {
     "name": "nuttaruj"
   },

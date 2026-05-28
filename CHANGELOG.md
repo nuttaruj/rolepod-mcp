@@ -7,6 +7,67 @@ release.
 
 ## [Unreleased]
 
+## [0.6.1] — 2026-05-28
+
+### Fixed
+
+- **Extension Protocol v1 detection** swapped from environment variable
+  (`ROLEPOD_PARENT=1`) to filesystem marker
+  (`<git-root>/.rolepod/parent-active`). The env-var mechanism never
+  fired in practice because Claude Code SessionStart hooks cannot
+  propagate env to the Bash tool or to the MCP server subprocess
+  Claude later spawns. The marker file is what the parent v2.7+ hook
+  actually writes — v0.6.1 reads it. **End-to-end combined mode now
+  works.**
+- Same swap for the protocol-version compatibility warning. Previously
+  read `process.env.ROLEPOD_PROTOCOL`; now reads the first trimmed
+  line of the marker file content.
+
+### Added
+
+- `src/util/rolepodProtocol.ts` — shared `detectRolepodParent()`
+  helper returning `{ active, protocol, gitRoot }`. ArtifactStore and
+  the server both call it.
+
+### Changed
+
+- With-parent runs anchor at **git root** (resolved via
+  `git rev-parse --show-toplevel`), not at `process.cwd()`. A uiproof
+  skill invoked from a subdirectory now lands its evidence under the
+  worktree root where parent's `check-work` skill looks — previously
+  it would have landed at `<cwd>/.rolepod/evidence/` and been
+  invisible to the aggregator.
+- Standalone path is unchanged — still anchored at `process.cwd()`.
+- All 5 SKILL.md files (+ mirrors under `plugins/`) updated to
+  describe the marker mechanism instead of the env var.
+- README "Standalone vs Combined" section updated with the marker
+  language and the `touch .rolepod/parent-active` force-on hint.
+
+### Removed
+
+- All reads of `process.env.ROLEPOD_PARENT` and
+  `process.env.ROLEPOD_PROTOCOL` from runtime code. Only historical
+  references remain in JSDoc that explains why the mechanism changed.
+
+### Migration from 0.6.0
+
+No API change. Standalone users see no difference (same evidence
+path, same tool output, same `manifest.json`). Combined-mode users
+gain working evidence routing — provided the parent plugin actually
+writes the marker (parent v2.7+ does).
+
+To force combined mode without a real parent session:
+
+```bash
+mkdir -p .rolepod && echo v1 > .rolepod/parent-active
+```
+
+To force standalone:
+
+```bash
+rm -f .rolepod/parent-active
+```
+
 ## [0.6.0] — 2026-05-27
 
 **Extension Protocol v1 — `uiproof` becomes parent-aware. Standalone

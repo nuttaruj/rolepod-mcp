@@ -33,7 +33,7 @@ Every skill is **single-backend** (D-024) — it calls the rolepod-uiproof serve
 
 **Standalone** (default): use the 5 skills directly as atomic browser tools. Evidence saved under `./.rolepod-uiproof/artifacts/<run>/` with a `manifest.json` per Extension Protocol v1.
 
-**Combined with rolepod parent**: when the parent's SessionStart hook sets `ROLEPOD_PARENT=1`, uiproof writes evidence to `./.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/` instead, where parent's `check-work` skill auto-aggregates manifests into the verify report. No skill changes — same 26 tools, same 5 skills, smarter routing.
+**Combined with rolepod parent**: when the parent's SessionStart hook drops the marker file `<git-root>/.rolepod/parent-active` (single line of content = the protocol version, e.g. `v1`), uiproof writes evidence to `<git-root>/.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/` instead, where parent's `check-work` skill auto-aggregates manifests into the verify report. The marker is read fresh per ArtifactStore construction; no env-var, no daemon. To force combined mode without a parent session: `mkdir -p .rolepod && echo v1 > .rolepod/parent-active`. No skill changes — same 26 tools, same 5 skills, smarter routing.
 
 | Install | Unlocks |
 |---|---|
