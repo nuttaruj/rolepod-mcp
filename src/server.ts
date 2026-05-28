@@ -25,6 +25,7 @@ import { browserUploadFileTool } from "./tools/atomic/browser_upload_file.js";
 import { browserWaitForTool } from "./tools/atomic/browser_wait_for.js";
 import { auditA11yTool } from "./tools/composite/audit_a11y.js";
 import { extractUiStateTool } from "./tools/composite/extract_ui_state.js";
+import { measureCwvTool } from "./tools/composite/measure_cwv.js";
 import { scaffoldE2eTool } from "./tools/composite/scaffold_e2e.js";
 import { verifyUiFlowTool } from "./tools/composite/verify_ui_flow.js";
 import { visualDiffTool } from "./tools/composite/visual_diff.js";
@@ -129,6 +130,8 @@ export function buildServer(
     visualDiffTool,
     scaffoldE2eTool,
     extractUiStateTool,
+    // v0.7 measurement surface
+    measureCwvTool,
   ] as const;
 
   for (const t of tools) {
