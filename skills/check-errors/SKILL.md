@@ -112,7 +112,7 @@ User: "Sign in then dashboard — make sure no console errors."
 Run artifacts are saved under:
 
 - **Standalone:** `.rolepod-uiproof/artifacts/<prefix>_<ts>_<uuid>/`
-- **With `rolepod` parent** (when `ROLEPOD_PARENT=1` is set by the parent's SessionStart hook): `.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/`
+- **With `rolepod` parent** (detected via the marker file `<git-root>/.rolepod/parent-active` written by the parent's SessionStart hook): `<git-root>/.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/`
 
 Either way the run directory contains a `manifest.json` per Extension Protocol v1. Because `/check-errors` wraps `rolepod_verify_ui_flow`, the manifest is written by the underlying composite tool — same shape, same fields.
 

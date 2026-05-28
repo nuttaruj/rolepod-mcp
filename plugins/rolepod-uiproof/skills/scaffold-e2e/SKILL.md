@@ -67,7 +67,7 @@ upstream Selenium has no network-capture primitive.
 Run artifacts (the generated test file) are saved under:
 
 - **Standalone:** `.rolepod-uiproof/artifacts/<prefix>_<ts>_<uuid>/`
-- **With `rolepod` parent** (when `ROLEPOD_PARENT=1` is set by the parent's SessionStart hook): `.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/`
+- **With `rolepod` parent** (detected via the marker file `<git-root>/.rolepod/parent-active` written by the parent's SessionStart hook): `<git-root>/.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/`
 
 Either way the run directory contains a `manifest.json` per Extension Protocol v1 (with `phase: "build"` for this skill).
 
