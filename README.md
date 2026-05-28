@@ -1,6 +1,6 @@
 # rolepod-uiproof
 
-**rolepod-uiproof gives Claude Code, Cursor, Codex CLI, and Gemini CLI a real browser/mobile driver — so the AI can actually click through your UI, audit accessibility, check console errors, inspect network requests, diff screenshots, and scaffold e2e tests instead of guessing.**
+**rolepod-uiproof gives Claude Code, Cursor, Codex CLI, Gemini CLI, and Antigravity (CLI + IDE) a real browser/mobile driver — so the AI can actually click through your UI, audit accessibility, measure Core Web Vitals, check console errors, inspect network requests, diff screenshots, audit on-page SEO, and scaffold e2e tests instead of guessing.**
 
 One MCP server, one tool surface, eight skills you invoke from chat. Web is production-ready via Playwright; iOS and Android use Appium (same client as alumnium — needs a local Appium daemon + simulator/emulator, or a real device). No internal LLM — your Lead agent drives every action.
 
@@ -103,7 +103,72 @@ Codex reads the plugin from `.agents/plugins/marketplace.json` + `.codex-plugin/
 
 ### Gemini CLI
 
-Not yet shipped. The Gemini extension format is not yet stable enough to commit to; we plan to add `gemini-extension.json` in v0.4. Track [issue #N](https://github.com/nuttaruj/rolepod-uiproof/issues) if you need it.
+Install directly from the GitHub repo:
+
+```bash
+# Install
+gemini extensions install https://github.com/nuttaruj/rolepod-uiproof
+
+# Update
+gemini extensions update rolepod-uiproof
+
+# Disable / re-enable
+gemini extensions disable rolepod-uiproof
+gemini extensions enable rolepod-uiproof
+
+# Uninstall
+gemini extensions uninstall rolepod-uiproof
+```
+
+Gemini CLI clones the repo into `~/.gemini/extensions/rolepod-uiproof/`, reads `gemini-extension.json` at the root, spawns the MCP server (`npx -y @rolepod/uiproof`), and auto-discovers all 8 skills from `skills/<name>/SKILL.md`. After install, **restart the CLI session** — Gemini loads extensions on startup, and `gemini extensions install` is not supported in interactive mode.
+
+Verify with `/extensions list` inside the CLI.
+
+### Antigravity (CLI + IDE)
+
+Antigravity reads from `~/.gemini/` but at different sub-paths than Gemini CLI — MCP config and skills must be wired manually.
+
+**Step 1 — Skills:**
+
+```bash
+# Copy uiproof skills into Antigravity's shared skills dir
+mkdir -p ~/.gemini/skills
+git clone --depth 1 https://github.com/nuttaruj/rolepod-uiproof /tmp/rolepod-uiproof
+cp -r /tmp/rolepod-uiproof/skills/* ~/.gemini/skills/
+rm -rf /tmp/rolepod-uiproof
+```
+
+If you already installed via Gemini CLI (`gemini extensions install`), symlink instead:
+
+```bash
+ln -s ~/.gemini/extensions/rolepod-uiproof/skills/measure-cwv ~/.gemini/skills/measure-cwv
+# repeat for each of the 8 skills, or:
+for d in ~/.gemini/extensions/rolepod-uiproof/skills/*/; do
+  ln -s "$d" ~/.gemini/skills/$(basename "$d")
+done
+```
+
+**Step 2 — MCP server:**
+
+Open Antigravity Settings → Customizations → **Open MCP Config** (or edit `~/.gemini/config/mcp_config.json` directly). Add the `rolepod-uiproof` entry to the `mcpServers` map:
+
+```json
+{
+  "mcpServers": {
+    "rolepod-uiproof": {
+      "command": "npx",
+      "args": ["-y", "@rolepod/uiproof"]
+    }
+  }
+}
+```
+
+Restart Antigravity. Verify the MCP server is connected via Settings → Customizations → MCP Servers panel.
+
+**Notes:**
+- Antigravity's `mcp_config.json` is shared across all Agy tools (CLI + IDE) — one config, both surfaces.
+- Skills are auto-discovered from `~/.gemini/skills/` — no manifest needed.
+- The 29 MCP tools surface in chat the same way as in Claude Code / Cursor / Codex.
 
 ### Direct npm (any MCP-aware tool)
 

@@ -7,6 +7,31 @@ release.
 
 ## [Unreleased]
 
+## [0.7.1] — 2026-05-28
+
+### Added
+
+- **Gemini CLI support** — `gemini-extension.json` at the repo root.
+  Install via `gemini extensions install https://github.com/nuttaruj/rolepod-uiproof`.
+  Gemini CLI auto-spawns the MCP server (`npx -y @rolepod/uiproof`) and
+  auto-discovers all 8 skills from `skills/<name>/SKILL.md`.
+  Manifest schema reference:
+  <https://github.com/google-gemini/gemini-cli/blob/main/docs/extensions/reference.md>.
+
+- **Antigravity (CLI + IDE) install guide** — Antigravity shares the
+  `~/.gemini/` namespace with Gemini CLI but reads MCP config from
+  `~/.gemini/config/mcp_config.json` and skills from `~/.gemini/skills/`
+  (not from inside an extension subdir). README now documents the
+  two-step manual wiring: copy/symlink skills + add the mcpServers
+  entry. Same 29 tools + 8 skills, same `@rolepod/uiproof` backend.
+
+### Notes
+
+- No code or schema changes — packaging + docs only. The npm package
+  contents are functionally identical to 0.7.0. The bump exists so
+  marketplaces and plugin caches that key off the version field will
+  pick up the new manifest + docs.
+
 ## [0.7.0] — 2026-05-28
 
 ### Added

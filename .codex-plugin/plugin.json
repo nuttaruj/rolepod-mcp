@@ -1,6 +1,6 @@
 {
   "name": "rolepod-uiproof",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Multi-platform UI/mobile automation for AI agents — 5 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e, check-errors) + MCP server with 26 tools. Works standalone today; pair with the `rolepod` parent plugin (detected via the marker file `<git-root>/.rolepod/parent-active`) and uiproof becomes the verify-phase UI provider.",
   "author": {
     "name": "nuttaruj",
