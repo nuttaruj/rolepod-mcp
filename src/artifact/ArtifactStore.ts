@@ -2,16 +2,24 @@ import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { log } from "../util/log.js";
+import { detectRolepodParent } from "../util/rolepodProtocol.js";
 
 /**
  * Writes run artifacts. In **standalone** mode (default) — and in v0.4 and
  * earlier — runs live under `./.rolepod-uiproof/artifacts/{prefix}_{ts}_{uuid}/`.
  *
- * In **with-parent** mode — activated automatically when the env var
- * `ROLEPOD_PARENT=1` is set by the parent `rolepod` plugin's SessionStart
- * hook — runs live under `./.rolepod/evidence/{ts}-rolepod-uiproof-{skill}/`,
- * per the Extension Protocol v1 evidence-path convention. Parent's
- * `check-work` skill aggregates manifest.json files from this directory.
+ * In **with-parent** mode — activated automatically when the marker file
+ * `<git-root>/.rolepod/parent-active` exists (written by the parent
+ * `rolepod` plugin's v2.7+ SessionStart hook) — runs live under
+ * `<git-root>/.rolepod/evidence/{ts}-rolepod-uiproof-{skill}/`, per the
+ * Extension Protocol v1 evidence-path convention. Parent's `check-work`
+ * skill aggregates manifest.json files from this directory.
+ *
+ * Note: with-parent runs anchor at the git root (resolved via
+ * `git rev-parse --show-toplevel`), so a uiproof skill invoked from a
+ * subdirectory still lands under the worktree root where `check-work`
+ * looks. Standalone runs stay anchored at `process.cwd()` — same as
+ * pre-v0.6 behavior.
  *
  * Baselines for `visual_diff` always live in `./.rolepod-uiproof/baselines/`
  * regardless of mode — they are user-curated configuration, not per-run
@@ -63,13 +71,15 @@ export class ArtifactStore {
   constructor(
     opts: { rootDir?: string; mode?: ArtifactMode } = {},
   ) {
-    const detectedParent = process.env.ROLEPOD_PARENT === "1";
-    this.mode = opts.mode ?? (detectedParent ? "with-parent" : "standalone");
+    const parent = detectRolepodParent();
+    this.mode = opts.mode ?? (parent.active ? "with-parent" : "standalone");
 
     if (opts.rootDir !== undefined) {
       this.rootDir = opts.rootDir;
     } else if (this.mode === "with-parent") {
-      this.rootDir = resolve(process.cwd(), ".rolepod", "evidence");
+      // Anchor evidence at git root so `check-work` finds it regardless of
+      // which subdirectory the skill was invoked from.
+      this.rootDir = resolve(parent.gitRoot, ".rolepod", "evidence");
     } else {
       this.rootDir = resolve(process.cwd(), ".rolepod-uiproof", "artifacts");
     }
@@ -83,7 +93,7 @@ export class ArtifactStore {
    * Allocate a fresh run dir and ensure it exists.
    *
    * - standalone: `./.rolepod-uiproof/artifacts/{prefix}_{ts}_{uuid}/`
-   * - with-parent: `./.rolepod/evidence/{ts}-rolepod-uiproof-{skill}/`
+   * - with-parent: `<git-root>/.rolepod/evidence/{ts}-rolepod-uiproof-{skill}/`
    *
    * `prefix` is preserved for back-compat with v0.5 callers; new callers
    * should also pass `opts.skill` so the with-parent path can be derived
