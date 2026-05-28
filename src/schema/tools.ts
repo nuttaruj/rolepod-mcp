@@ -541,6 +541,100 @@ export const extractUiStateSchema = z.object(extractUiStateShape);
 export type ExtractUiStateInput = z.infer<typeof extractUiStateSchema>;
 
 // ---------------------------------------------------------------------------
+// v0.7 measurement surface
+//
+// Three composites that turn the live browser into a measurement
+// substrate: Core Web Vitals (PerformanceObserver), page-weight budget
+// (HAR-classified), and on-page SEO (DOM + meta inspection). All three
+// are in-browser-observable only — bundle analysis, p95/p99 latency,
+// and build-time concerns are reserved for the parent rolepod's
+// performance-engineer agent (see brief/handoff-uiproof-v0.7.md).
+// ---------------------------------------------------------------------------
+
+export const cwvInteractionStepSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("click"), query: z.string() }),
+  z.object({ kind: z.literal("type"), query: z.string(), text: z.string() }),
+  z.object({ kind: z.literal("key"), key: z.string() }),
+  z.object({
+    kind: z.literal("scroll"),
+    direction: z.enum(["up", "down"]).default("down"),
+    amount: z.number().int().positive().optional(),
+  }),
+]);
+
+export const cwvThresholdsSchema = z.object({
+  lcp_ms: z.number().positive().default(2500),
+  inp_ms: z.number().positive().default(200),
+  cls: z.number().min(0).default(0.1),
+});
+
+export const measureCwvShape = {
+  url: z.string().url(),
+  browser: browserSchema.optional().default("chromium"),
+  viewport: viewportSchema.optional(),
+  emulate: z
+    .object({
+      network_throttle: networkPresetSchema.optional(),
+      cpu_throttle: z.number().min(1).max(20).optional(),
+    })
+    .optional(),
+  observe_ms: z.number().int().min(1000).max(30000).default(5000),
+  interactions: z.array(cwvInteractionStepSchema).optional(),
+  thresholds: cwvThresholdsSchema.optional(),
+  close_on_finish: z.boolean().default(true),
+} as const;
+export const measureCwvSchema = z.object(measureCwvShape);
+export type MeasureCwvInput = z.infer<typeof measureCwvSchema>;
+
+export const pageBudgetSchema = z.object({
+  total_kb: z.number().positive().default(1500),
+  js_kb: z.number().positive().default(300),
+  css_kb: z.number().positive().default(100),
+  image_kb: z.number().positive().default(500),
+  font_kb: z.number().positive().default(100),
+  third_party_kb: z.number().positive().default(200),
+  request_count: z.number().int().positive().default(100),
+});
+
+export const auditPageBudgetShape = {
+  url: z.string().url(),
+  browser: browserSchema.optional().default("chromium"),
+  viewport: viewportSchema.optional(),
+  budget: pageBudgetSchema.optional(),
+  third_party_hostnames: z.array(z.string().min(1)).optional(),
+  wait_for_idle_ms: z.number().int().min(0).max(60000).default(2000),
+  close_on_finish: z.boolean().default(true),
+} as const;
+export const auditPageBudgetSchema = z.object(auditPageBudgetShape);
+export type AuditPageBudgetInput = z.infer<typeof auditPageBudgetSchema>;
+
+export const seoCheckSchema = z.enum([
+  "title",
+  "meta_description",
+  "h1",
+  "lang",
+  "viewport",
+  "canonical",
+  "robots",
+  "og_tags",
+  "twitter_tags",
+  "json_ld",
+  "hreflang",
+  "favicon",
+]);
+
+export const auditSeoShape = {
+  url: z.string().url(),
+  browser: browserSchema.optional().default("chromium"),
+  viewport: viewportSchema.optional(),
+  checks: z.array(seoCheckSchema).optional(),
+  report_format: z.enum(["json", "markdown"]).default("json"),
+  close_on_finish: z.boolean().default(true),
+} as const;
+export const auditSeoSchema = z.object(auditSeoShape);
+export type AuditSeoInput = z.infer<typeof auditSeoSchema>;
+
+// ---------------------------------------------------------------------------
 // Tool name registry — single source of truth for tool naming.
 // All names are prefixed `rolepod_*` per brief 03-tool-surface.md.
 // ---------------------------------------------------------------------------
@@ -574,6 +668,10 @@ export const ToolNames = {
   visualDiff: "rolepod_visual_diff",
   scaffoldE2e: "rolepod_scaffold_e2e",
   extractUiState: "rolepod_extract_ui_state",
+  // v0.7 measurement surface
+  measureCwv: "rolepod_measure_cwv",
+  auditPageBudget: "rolepod_audit_page_budget",
+  auditSeo: "rolepod_audit_seo",
 } as const;
 
 export type ToolName = (typeof ToolNames)[keyof typeof ToolNames];

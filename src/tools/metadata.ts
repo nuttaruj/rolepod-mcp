@@ -272,4 +272,32 @@ export const toolMetadata: Record<ToolName, ToolMetadata> = {
       openWorldHint: false,
     },
   },
+
+  // ---------- v0.7 measurement surface ----------
+  [ToolNames.measureCwv]: {
+    title: "Measure Core Web Vitals (LCP/INP/CLS)",
+    annotations: {
+      title: "Measure Core Web Vitals",
+      // Opens its own browser, observes PerformanceObserver, writes metrics
+      // + manifest to artifacts/. Read-only for the target page.
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
+  },
+  [ToolNames.auditPageBudget]: {
+    title: "Audit Page Weight Budget (HAR)",
+    annotations: {
+      title: "Audit Page Weight Budget",
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
+  },
+  [ToolNames.auditSeo]: {
+    title: "Audit On-Page SEO (DOM + meta)",
+    annotations: {
+      title: "Audit On-Page SEO",
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
+  },
 };
