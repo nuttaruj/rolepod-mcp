@@ -89,11 +89,11 @@ Skills are not auto-registered under Cursor (no unified plugin format for skills
 ```bash
 # Install
 codex plugin marketplace add nuttaruj/rolepod-uiproof
-codex plugin install rolepod-uiproof@rolepod-uiproof
+codex plugin add rolepod-uiproof@rolepod-uiproof
 
 # Update
 codex plugin marketplace upgrade rolepod-uiproof
-codex plugin install rolepod-uiproof@rolepod-uiproof
+codex plugin add rolepod-uiproof@rolepod-uiproof
 ```
 
 Codex reads the plugin from `.agents/plugins/marketplace.json` + `.codex-plugin/plugin.json` in this repo. Skills install to `~/.codex/skills/` (Codex's plugin loader handles registration).
