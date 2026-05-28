@@ -120,4 +120,4 @@ Either way the run directory contains a `manifest.json` per Extension Protocol v
 
 > The `/check-errors` skill needs the **rolepod-uiproof** MCP server,
 > which is not currently available. Confirm the plugin is installed and
-> try again, or check that `npx -y rolepod-uiproof` is reachable.
+> try again, or check that `npx -y @rolepod/uiproof` is reachable.

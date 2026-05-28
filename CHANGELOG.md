@@ -7,6 +7,47 @@ release.
 
 ## [Unreleased]
 
+## [0.6.2] — 2026-05-28
+
+### Fixed
+
+- **Plugin MCP server failed to start in fresh sessions** with
+  `Failed to reconnect to plugin:rolepod-uiproof:rolepod-uiproof: -32000`.
+  Root cause: v0.4.1 changed every `mcpServers` config to invoke
+  `npx -y rolepod-uiproof` (unscoped) instead of
+  `npx -y @rolepod/uiproof` (scoped). The unscoped name does not
+  exist on the npm registry — npx returned `E404` and the spawn
+  failed. The earlier "fix" only appeared to work on machines that
+  already had `node_modules/.bin/rolepod-uiproof` cached from a
+  previous local install; a fresh environment (where Claude Code
+  spawns the MCP server in its own subprocess with a clean PATH)
+  always 404'd.
+
+  Verified directly: `npx -y rolepod-uiproof` → `npm error code E404`;
+  `npx -y @rolepod/uiproof` → MCP server boots, lists 26 tools,
+  responds to `initialize`. v0.4.1's premise that npx couldn't
+  resolve a scoped package's bin when the bin name didn't match the
+  short name was wrong — modern npx exec selects the single
+  available bin regardless of naming.
+
+  Reverts the four `mcpServers` invocations + the matching
+  documentation:
+
+  - `.mcp.json`
+  - `.cursor/mcp.json`
+  - `.claude-plugin/plugin.json`
+  - `plugins/rolepod-uiproof/.mcp.json`
+  - `README.md` (Install snippet)
+  - `skills/verify-ui/SKILL.md` + `skills/check-errors/SKILL.md`
+    ("If the tool is unavailable" hint)
+  - `plugins/rolepod-uiproof/skills/{verify-ui,check-errors}/SKILL.md`
+    (mirrors)
+
+  Plugin and standalone consumers must update to v0.6.2 (or override
+  the command manually in `.mcp.json`) to get working spawns. The
+  package itself was always installable as `@rolepod/uiproof`; only
+  the invocation form was broken.
+
 ## [0.6.1] — 2026-05-28
 
 ### Fixed

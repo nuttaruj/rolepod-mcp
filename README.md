@@ -111,7 +111,7 @@ Use this when your tool reads a standard `mcpServers` config (most non-CLI MCP c
   "mcpServers": {
     "rolepod-uiproof": {
       "command": "npx",
-      "args": ["-y", "rolepod-uiproof"]
+      "args": ["-y", "@rolepod/uiproof"]
     }
   }
 }
