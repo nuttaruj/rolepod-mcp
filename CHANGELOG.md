@@ -7,6 +7,74 @@ release.
 
 ## [Unreleased]
 
+## [0.7.0] — 2026-05-28
+
+### Added
+
+- **Measurement surface** — three new composite tools and matching
+  skills that turn the live browser into a measurement substrate.
+  Complements (does not replace) the existing interaction + capture
+  surface shipped in v0.5.
+
+  | Tool | Skill | What it returns |
+  |---|---|---|
+  | `rolepod_measure_cwv` | `/measure-cwv` | LCP / INP / CLS via PerformanceObserver |
+  | `rolepod_audit_page_budget` | `/audit-page-budget` | HAR-classified byte budget per asset category |
+  | `rolepod_audit_seo` | `/audit-seo` | On-page SEO findings (title / meta / h1 / lang / OG / JSON-LD / etc.) |
+
+  Tool count 26 → 29. Skill count 5 → 8.
+
+- **CWV injection helper** (`src/engine/cwv.ts`) — `CWV_INJECTION_SCRIPT`
+  attaches three PerformanceObservers populating
+  `window.__rolepodCwv`. Classification helpers map raw metrics to the
+  web.dev good / needs-improvement / poor bands and roll them into an
+  overall pass / warn / fail verdict.
+
+- **HAR classifier** (`src/engine/harClassifier.ts`) — pure-utility
+  module that reads the HAR file Playwright writes at context shutdown,
+  classifies entries by asset category (js / css / image / font /
+  other) via MIME-first + URL-extension fallback, detects third-party
+  by hostname with an eTLD+1 heuristic and optional allowlist, and
+  compares totals to a declared budget.
+
+### Scope rule (locked in v0.7)
+
+uiproof OWNS only what is observable from a running browser. The
+following are **explicitly delegated** to the parent rolepod's
+`performance-engineer` agent and are not in scope for any uiproof skill:
+
+- Build-time bundle analysis
+- Backend p95 / p99 latency
+- Synthetic load tests (k6, Locust, Artillery)
+- Database query plan / EXPLAIN ANALYZE
+- Flame graphs / CPU profiles
+
+SKILL.md frontmatter descriptions for the three new skills are
+intentionally free of those terms to avoid prompt-routing collision.
+Each skill's body lists them under "When NOT to use" as visible
+anti-routing examples.
+
+### Standalone behavior
+
+All three new skills follow the existing `/audit-a11y` pattern —
+single-backend (D-024), marker-file aware, manifest emission with
+`phase: "verify"`. Standalone runs write to
+`./.rolepod-uiproof/artifacts/`; with the parent's marker file
+(`<git-root>/.rolepod/parent-active`) they write to
+`<git-root>/.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/`.
+
+### Notes
+
+- `measure_cwv` is **chromium-only** — Firefox and WebKit ship partial
+  PerformanceObserver coverage for the `largest-contentful-paint`,
+  `layout-shift`, and `event` entry types. The tool refuses other
+  browsers with the structured error `cwv_unsupported_browser`.
+- `measure_cwv` reports INP as `unmeasured` when the call passes no
+  `interactions[]` — INP is meaningless without real input and the
+  verdict reflects that honestly rather than misreporting a 0.
+- `audit_page_budget` requires `close_on_finish: true` (the default) —
+  the HAR file is only flushed when the Playwright context closes.
+
 ## [0.6.2] — 2026-05-28
 
 ### Fixed

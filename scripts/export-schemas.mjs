@@ -41,6 +41,10 @@ const pairs = [
   ["visualDiff", lib.visualDiffSchema],
   ["scaffoldE2e", lib.scaffoldE2eSchema],
   ["extractUiState", lib.extractUiStateSchema],
+  // v0.7 measurement surface
+  ["measureCwv", lib.measureCwvSchema],
+  ["auditPageBudget", lib.auditPageBudgetSchema],
+  ["auditSeo", lib.auditSeoSchema],
 ];
 
 const tools = {};

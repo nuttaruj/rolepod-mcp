@@ -45,6 +45,9 @@ export {
   visualDiffShape,
   scaffoldE2eShape,
   extractUiStateShape,
+  measureCwvShape,
+  auditPageBudgetShape,
+  auditSeoShape,
   // z.object() schemas (for json-schema export / parsing)
   browserOpenSchema,
   browserCloseSchema,
@@ -72,6 +75,9 @@ export {
   visualDiffSchema,
   scaffoldE2eSchema,
   extractUiStateSchema,
+  measureCwvSchema,
+  auditPageBudgetSchema,
+  auditSeoSchema,
 } from "./schema/tools.js";
 export {
   RolepodMcpError,

@@ -81,6 +81,10 @@ const expected = [
   "rolepod_visual_diff",
   "rolepod_scaffold_e2e",
   "rolepod_extract_ui_state",
+  // v0.7 measurement surface (3)
+  "rolepod_measure_cwv",
+  "rolepod_audit_page_budget",
+  "rolepod_audit_seo",
 ];
 const missing = expected.filter((n) => !names.includes(n));
 if (missing.length) {
