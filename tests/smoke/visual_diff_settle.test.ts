@@ -42,6 +42,22 @@ const FIXTURE_HTML = `<!doctype html>
 </body>
 </html>`;
 
+// visual_diff always writes baselines under <cwd>/.rolepod-uiproof/baselines
+// (gitignored). Clean ours before/after so a leftover from a prior run can't
+// change seed-vs-diff behaviour.
+const BASELINE_DIR = join(process.cwd(), ".rolepod-uiproof", "baselines");
+const BASELINE_IDS = [
+  "reveal_fixture",
+  "reveal_fixture_nosettle",
+  "box_region",
+  "dim_mismatch",
+];
+function cleanBaselines(): void {
+  for (const id of BASELINE_IDS) {
+    rmSync(join(BASELINE_DIR, `${id}.png`), { force: true });
+  }
+}
+
 let tmpRoot: string;
 let fixtureUrl: string;
 let registry: SessionRegistry;
@@ -60,11 +76,13 @@ beforeAll(() => {
   registry.register("web", engine);
   store = new ArtifactStore({ rootDir: join(tmpRoot, "artifacts"), mode: "standalone" });
   ctx = { registry, store };
+  cleanBaselines();
 });
 
 afterAll(async () => {
   await registry.shutdown();
   rmSync(tmpRoot, { recursive: true, force: true });
+  cleanBaselines();
 });
 
 describe("settle + freeze capture", () => {
@@ -160,6 +178,39 @@ describe("settle + freeze capture", () => {
     expect(png.width).toBe(200);
     expect(png.height).toBe(100);
     expect(isGreen(avgColor(png, 60, 30, 80, 40))).toBe(true);
+  });
+
+  it("reports a graceful dimension mismatch instead of throwing", async () => {
+    const handler = visualDiffTool.build(ctx);
+
+    // Seed at 800px wide.
+    const seed = await handler({
+      open: { platform: "web", url: fixtureUrl, headless: true },
+      baseline_id: "dim_mismatch",
+      viewport: { width: 800, height: 600 },
+      threshold_pct: 0.1,
+      pixel_threshold: 0.1,
+      close_on_finish: true,
+      settle: false,
+    });
+    expect((seed.structuredContent as Record<string, unknown>).passed).toBe(true);
+
+    // Re-capture at 1000px wide → full-page width differs → mismatch.
+    const second = await handler({
+      open: { platform: "web", url: fixtureUrl, headless: true },
+      baseline_id: "dim_mismatch",
+      viewport: { width: 1000, height: 600 },
+      threshold_pct: 0.1,
+      pixel_threshold: 0.1,
+      close_on_finish: true,
+      settle: false,
+    });
+    expect(second.isError).not.toBe(true); // graceful, not a thrown engine_error
+    const body = second.structuredContent as Record<string, unknown>;
+    expect(body.dimension_mismatch).toBe(true);
+    expect(body.passed).toBe(false);
+    expect((body.dimensions as { width_delta: number }).width_delta).toBe(200);
+    expect(String(body.diff_image_path)).toMatch(/diff\.png$/);
   });
 });
 

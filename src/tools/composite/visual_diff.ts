@@ -14,10 +14,21 @@ import { writeManifest, type ManifestArtifact } from "../../util/manifest.js";
 import { ok, safeHandler } from "../result.js";
 import type { ToolModule } from "../types.js";
 
+/**
+ * Copy the top-left w×h region of a PNG into a fresh PNG. Uses the static
+ * PNG.bitblt — `PNG.sync.read` returns a plain {width,height,data} object
+ * without the prototype's instance `bitblt`.
+ */
+function cropTopLeft(src: PNG, w: number, h: number): PNG {
+  const out = new PNG({ width: w, height: h });
+  PNG.bitblt(src, out, 0, 0, w, h, 0, 0);
+  return out;
+}
+
 export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
   name: ToolNames.visualDiff,
   description:
-    "Capture a screenshot and compare against a named baseline under ./.rolepod-uiproof/baselines/. First call for a baseline_id seeds the baseline (passed=true, diff_pct=0). Subsequent calls return the diff percentage and an annotated diff image. By default (settle=true) the page is scrolled to trigger scroll-reveal/lazy content, network-idled, and animations frozen before capture — so reveal-heavy pages are not baselined while invisible. Pass `selector` to scope the diff to one element (region-scoped) instead of the full page.",
+    "Capture a screenshot and compare against a named baseline under ./.rolepod-uiproof/baselines/. First call for a baseline_id seeds the baseline (passed=true, diff_pct=0). Subsequent calls return the diff percentage and an annotated diff image. By default (settle=true) the page is scrolled to trigger scroll-reveal/lazy content, network-idled, and animations frozen before capture — so reveal-heavy pages are not baselined while invisible. Pass `selector` to scope the diff to one element (region-scoped) instead of the full page. A size change vs the baseline is reported gracefully (overlap diff + width/height deltas, dimension_mismatch=true, passed=false) rather than erroring.",
   inputShape: visualDiffShape,
   build(ctx) {
     return safeHandler(async (args: VisualDiffInput) => {
@@ -100,29 +111,40 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
         const baseline = PNG.sync.read(baselineRaw);
         const current = PNG.sync.read(currentRaw);
 
-        if (baseline.width !== current.width || baseline.height !== current.height) {
-          throw new RolepodMcpError(
-            "engine_error",
-            `Dimension mismatch for baseline "${args.baseline_id}" — baseline ${baseline.width}x${baseline.height}, current ${current.width}x${current.height}. Delete the baseline or pass a matching viewport.`,
-            {
-              baseline: { w: baseline.width, h: baseline.height },
-              current: { w: current.width, h: current.height },
-            },
-          );
-        }
+        const dimensionMismatch =
+          baseline.width !== current.width ||
+          baseline.height !== current.height;
+        // On a size change, diff the overlapping top-left region so the caller
+        // gets a usable diff image + measured deltas instead of a hard error.
+        // A mismatch still fails the check (a resize is a real visual change) —
+        // re-seed the baseline if the new size is intended.
+        const cmpWidth = Math.min(baseline.width, current.width);
+        const cmpHeight = Math.min(baseline.height, current.height);
+        const baselineCmp = dimensionMismatch
+          ? cropTopLeft(baseline, cmpWidth, cmpHeight)
+          : baseline;
+        const currentCmp = dimensionMismatch
+          ? cropTopLeft(current, cmpWidth, cmpHeight)
+          : current;
 
-        const diff = new PNG({ width: baseline.width, height: baseline.height });
+        const diff = new PNG({ width: cmpWidth, height: cmpHeight });
         const diffPixels = pixelmatch(
-          baseline.data,
-          current.data,
+          baselineCmp.data,
+          currentCmp.data,
           diff.data,
-          baseline.width,
-          baseline.height,
+          cmpWidth,
+          cmpHeight,
           { threshold: args.pixel_threshold, includeAA: true },
         );
-        const total = baseline.width * baseline.height;
+        const total = cmpWidth * cmpHeight;
         const diffPct = diffPixels / total;
-        const passed = diffPct <= args.threshold_pct;
+        const passed = !dimensionMismatch && diffPct <= args.threshold_pct;
+        const dimensions = {
+          baseline: { w: baseline.width, h: baseline.height },
+          current: { w: current.width, h: current.height },
+          width_delta: current.width - baseline.width,
+          height_delta: current.height - baseline.height,
+        };
 
         const diffImagePath = await ctx.store.writeBytes(
           runDir,
@@ -140,7 +162,11 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
           skill,
           phase: "verify",
           status: passed ? "pass" : "fail",
-          summary: `diff ${(diffPct * 100).toFixed(3)}% vs baseline "${args.baseline_id}" (threshold ${(args.threshold_pct * 100).toFixed(3)}%)`,
+          summary: `diff ${(diffPct * 100).toFixed(3)}% vs baseline "${args.baseline_id}" (threshold ${(args.threshold_pct * 100).toFixed(3)}%)${
+            dimensionMismatch
+              ? ` — DIMENSION MISMATCH baseline ${baseline.width}x${baseline.height} vs current ${current.width}x${current.height}; compared ${cmpWidth}x${cmpHeight} overlap`
+              : ""
+          }`,
           startedAt,
           finishedAt: new Date().toISOString(),
           artifacts,
@@ -151,6 +177,9 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
             total_pixels: total,
             threshold_pct: args.threshold_pct,
             settled: args.settle,
+            dimension_mismatch: dimensionMismatch,
+            width_delta: dimensions.width_delta,
+            height_delta: dimensions.height_delta,
             ...(args.selector ? { selector: args.selector } : {}),
           },
         });
@@ -162,6 +191,8 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
           diff_pixels: diffPixels,
           total_pixels: total,
           passed,
+          dimension_mismatch: dimensionMismatch,
+          dimensions,
           baseline_path: baselinePath,
           current_path: currentPath,
           diff_image_path: diffImagePath,
