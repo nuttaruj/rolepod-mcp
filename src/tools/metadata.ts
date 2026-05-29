@@ -272,6 +272,14 @@ export const toolMetadata: Record<ToolName, ToolMetadata> = {
       openWorldHint: false,
     },
   },
+  [ToolNames.extractComputedStyle]: {
+    title: "Extract Computed CSS",
+    annotations: {
+      title: "Extract Computed CSS",
+      readOnlyHint: true,
+      openWorldHint: true,
+    },
+  },
 
   // ---------- v0.7 measurement surface ----------
   [ToolNames.measureCwv]: {

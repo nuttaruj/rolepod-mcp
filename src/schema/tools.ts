@@ -321,6 +321,18 @@ export const browserEvaluateSchema = z.object(browserEvaluateShape);
 export type BrowserEvaluateInput = z.infer<typeof browserEvaluateSchema>;
 
 /**
+ * Read computed CSS for the first element matching `selector`. Read-only —
+ * no eval gate. `properties` overrides the curated default set when given.
+ */
+export const extractComputedStyleShape = {
+  session_id: z.string().min(1),
+  selector: z.string().min(1),
+  properties: z.array(z.string().min(1)).optional(),
+} as const;
+export const extractComputedStyleSchema = z.object(extractComputedStyleShape);
+export type ExtractComputedStyleInput = z.infer<typeof extractComputedStyleSchema>;
+
+/**
  * Multi-page support. A session owns one browser context, which may
  * have multiple pages (e.g. when an OAuth popup or `target="_blank"`
  * link opens). The active page index is sticky — all subsequent
@@ -677,6 +689,7 @@ export const ToolNames = {
   browserEvaluate: "rolepod_browser_evaluate",
   browserPages: "rolepod_browser_pages",
   browserSwitchPage: "rolepod_browser_switch_page",
+  extractComputedStyle: "rolepod_extract_computed_style",
   // composite
   verifyUiFlow: "rolepod_verify_ui_flow",
   auditA11y: "rolepod_audit_a11y",

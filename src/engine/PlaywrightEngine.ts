@@ -461,6 +461,57 @@ export class PlaywrightEngine implements Engine {
   }
 
   /**
+   * Read the computed CSS of the first element matching `selector`, plus its
+   * bounding box. Read-only DOM introspection — not gated like evaluate().
+   * `props` is the exact list of CSS property names to read.
+   */
+  async computedStyle(
+    session: Session,
+    selector: string,
+    props: string[],
+  ): Promise<{
+    found: boolean;
+    match_count: number;
+    styles: Record<string, string>;
+    box: { x: number; y: number; width: number; height: number } | null;
+  }> {
+    const s = this.requireSession(session.id);
+    return this.activePage(s).evaluate(
+      ({ sel, properties }) => {
+        const g = globalThis as unknown as {
+          document: { querySelectorAll: (q: string) => ArrayLike<unknown> };
+          getComputedStyle: (el: unknown) => {
+            getPropertyValue: (p: string) => string;
+          };
+        };
+        const nodes = g.document.querySelectorAll(sel);
+        if (nodes.length === 0) {
+          return { found: false, match_count: 0, styles: {}, box: null };
+        }
+        const el = nodes[0] as {
+          getBoundingClientRect: () => {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+          };
+        };
+        const cs = g.getComputedStyle(el);
+        const styles: Record<string, string> = {};
+        for (const p of properties) styles[p] = cs.getPropertyValue(p);
+        const r = el.getBoundingClientRect();
+        return {
+          found: true,
+          match_count: nodes.length,
+          styles,
+          box: { x: r.x, y: r.y, width: r.width, height: r.height },
+        };
+      },
+      { sel: selector, properties: props },
+    );
+  }
+
+  /**
    * Bring the page to a deterministic, fully-rendered state before a
    * capture. A fullPage screenshot resizes the viewport in one step and
    * never fires the scroll/intersection events that scroll-reveal widgets

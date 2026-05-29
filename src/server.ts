@@ -23,6 +23,7 @@ import { browserSwitchPageTool } from "./tools/atomic/browser_switch_page.js";
 import { browserTypeTool } from "./tools/atomic/browser_type.js";
 import { browserUploadFileTool } from "./tools/atomic/browser_upload_file.js";
 import { browserWaitForTool } from "./tools/atomic/browser_wait_for.js";
+import { extractComputedStyleTool } from "./tools/atomic/extract_computed_style.js";
 import { auditA11yTool } from "./tools/composite/audit_a11y.js";
 import { auditPageBudgetTool } from "./tools/composite/audit_page_budget.js";
 import { auditSeoTool } from "./tools/composite/audit_seo.js";
@@ -126,6 +127,7 @@ export function buildServer(
     browserEvaluateTool,
     browserPagesTool,
     browserSwitchPageTool,
+    extractComputedStyleTool,
     // composite
     verifyUiFlowTool,
     auditA11yTool,
