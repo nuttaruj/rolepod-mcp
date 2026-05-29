@@ -68,7 +68,7 @@ describe("new atomic tools", () => {
       expect((waited.structuredContent as { matched: boolean }).matched).toBe(true);
 
       const shot = browserScreenshotTool.build(ctx);
-      const shotResult = await shot({ session_id: sid });
+      const shotResult = await shot({ session_id: sid, freeze_motion: false });
       expect((shotResult.structuredContent as { bytes: number }).bytes).toBeGreaterThan(
         1000,
       );

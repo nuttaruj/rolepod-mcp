@@ -139,6 +139,16 @@ export type BrowserWaitForInput = z.infer<typeof browserWaitForSchema>;
 export const browserScreenshotShape = {
   session_id: z.string().min(1),
   full_page: z.boolean().optional(),
+  /**
+   * CSS selector to capture only that element's bounding box (web-only).
+   * Overrides `full_page`.
+   */
+  selector: z.string().min(1).optional(),
+  /**
+   * Freeze CSS animations/transitions + hide the text caret for a
+   * deterministic capture (Playwright `animations: "disabled"`). Default off.
+   */
+  freeze_motion: z.boolean().default(false),
 } as const;
 export const browserScreenshotSchema = z.object(browserScreenshotShape);
 export type BrowserScreenshotInput = z.infer<typeof browserScreenshotSchema>;

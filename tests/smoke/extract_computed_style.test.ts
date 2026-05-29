@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ArtifactStore } from "../../src/artifact/ArtifactStore.js";
 import { PlaywrightEngine } from "../../src/engine/PlaywrightEngine.js";
 import { SessionRegistry } from "../../src/session/SessionRegistry.js";
+import { browserScreenshotTool } from "../../src/tools/atomic/browser_screenshot.js";
 import { extractComputedStyleTool } from "../../src/tools/atomic/extract_computed_style.js";
 import type { ToolContext } from "../../src/tools/types.js";
 
@@ -93,5 +94,49 @@ describe("extract_computed_style", () => {
     expect(result.isError).toBe(true);
     const body = result.structuredContent as { code: string };
     expect(body.code).toBe("invalid_input");
+  });
+});
+
+describe("browser_screenshot — element + dimensions", () => {
+  it("captures a single element via selector and reports its size", async () => {
+    const handler = browserScreenshotTool.build(ctx);
+    const result = await handler({
+      session_id: sessionId,
+      selector: "#target",
+      freeze_motion: true,
+    });
+    expect(result.isError).not.toBe(true);
+    const body = result.structuredContent as {
+      width: number;
+      height: number;
+      bytes: number;
+    };
+    expect(body.bytes).toBeGreaterThan(100);
+    // #target: 150×60 content + 20/10 padding → 190×80 bounding box.
+    expect(body.width).toBe(190);
+    expect(body.height).toBe(80);
+  });
+
+  it("full-page capture reports non-undefined dimensions", async () => {
+    const handler = browserScreenshotTool.build(ctx);
+    const result = await handler({
+      session_id: sessionId,
+      full_page: false,
+      freeze_motion: false,
+    });
+    const body = result.structuredContent as { width: number; height: number };
+    expect(body.width).toBeGreaterThan(0);
+    expect(body.height).toBeGreaterThan(0);
+  });
+
+  it("returns invalid_input when a selector matches nothing", async () => {
+    const handler = browserScreenshotTool.build(ctx);
+    const result = await handler({
+      session_id: sessionId,
+      selector: "#does-not-exist",
+      freeze_motion: false,
+    });
+    expect(result.isError).toBe(true);
+    expect((result.structuredContent as { code: string }).code).toBe("invalid_input");
   });
 });
