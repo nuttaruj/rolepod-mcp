@@ -36,6 +36,7 @@ const pairs = [
   ["browserEvaluate", lib.browserEvaluateSchema],
   ["browserPages", lib.browserPagesSchema],
   ["browserSwitchPage", lib.browserSwitchPageSchema],
+  ["extractComputedStyle", lib.extractComputedStyleSchema],
   ["verifyUiFlow", lib.verifyUiFlowSchema],
   ["auditA11y", lib.auditA11ySchema],
   ["visualDiff", lib.visualDiffSchema],
@@ -55,6 +56,15 @@ for (const [key, schema] of pairs) {
     process.exit(1);
   }
   tools[toolName] = zodToJsonSchema(schema, { target: "jsonSchema2019-09" });
+}
+
+// Parity guard: every registered tool MUST have an exported schema. Catches a
+// new tool added to ToolNames but not to the `pairs` list above (otherwise the
+// export silently under-emits and consumers never see the tool's schema).
+const missing = Object.values(ToolNames).filter((name) => !(name in tools));
+if (missing.length > 0) {
+  console.error(`Schema export missing for tool(s): ${missing.join(", ")}`);
+  process.exit(1);
 }
 
 const out = {
