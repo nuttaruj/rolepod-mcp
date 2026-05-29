@@ -435,6 +435,32 @@ export class PlaywrightEngine implements Engine {
   }
 
   /**
+   * Capture a single element's bounding box (region-scoped screenshot).
+   * Web-only. Auto-waits for the element to be visible; a selector that
+   * matches nothing surfaces `invalid_input` rather than a raw timeout.
+   */
+  async screenshotElement(
+    session: Session,
+    selector: string,
+    opts: ScreenshotOptions = {},
+  ): Promise<Buffer> {
+    const s = this.requireSession(session.id);
+    const locator = this.activePage(s).locator(selector).first();
+    try {
+      return await locator.screenshot({
+        timeout: 10_000,
+        ...(opts.freezeMotion ? { animations: "disabled", caret: "hide" } : {}),
+      });
+    } catch (err) {
+      throw new RolepodMcpError(
+        "invalid_input",
+        `selector "${selector}" matched no visible element to screenshot.`,
+        { selector, cause: String(err) },
+      );
+    }
+  }
+
+  /**
    * Bring the page to a deterministic, fully-rendered state before a
    * capture. A fullPage screenshot resizes the viewport in one step and
    * never fires the scroll/intersection events that scroll-reveal widgets

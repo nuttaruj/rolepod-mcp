@@ -510,6 +510,13 @@ export const visualDiffShape = {
    * static pages where the extra scroll/wait is wasted.
    */
   settle: z.boolean().default(true),
+  /**
+   * CSS selector to scope the capture to a single element instead of the
+   * full page. Diffs the element's own bounding box — catches per-component
+   * regressions and sidesteps full-page height drift. Use a distinct
+   * baseline_id per region. Omit to diff the whole page.
+   */
+  selector: z.string().min(1).optional(),
 } as const;
 export const visualDiffSchema = z.object(visualDiffShape);
 export type VisualDiffInput = z.infer<typeof visualDiffSchema>;

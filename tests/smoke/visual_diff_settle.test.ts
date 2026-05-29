@@ -24,11 +24,13 @@ const FIXTURE_HTML = `<!doctype html>
 <html>
 <head><meta charset="utf-8"><style>
   html,body{margin:0;padding:0;background:#ffffff}
-  #spacer{height:1500px;background:#ffffff}
+  #box{width:200px;height:100px;background:#00ff00}
+  #spacer{height:1400px;background:#ffffff}
   #reveal{height:600px;background:#ff0000;opacity:0;transition:opacity .3s ease}
   #reveal.shown{opacity:1}
 </style></head>
 <body>
+  <div id="box"></div>
   <div id="spacer"></div>
   <div id="reveal"></div>
   <script>
@@ -136,6 +138,29 @@ describe("settle + freeze capture", () => {
     const baseline = PNG.sync.read(readFileSync(String(body.baseline_path)));
     expect(isRed(avgColor(baseline, 600, 1700, 80, 200))).toBe(false);
   });
+
+  it("visual_diff with a selector captures only that element (region-scoped)", async () => {
+    const handler = visualDiffTool.build(ctx);
+    const result = await handler({
+      open: { platform: "web", url: fixtureUrl, headless: true },
+      baseline_id: "box_region",
+      threshold_pct: 0.1,
+      pixel_threshold: 0.1,
+      close_on_finish: true,
+      settle: false,
+      selector: "#box",
+    });
+
+    expect(result.isError).not.toBe(true);
+    const body = result.structuredContent as Record<string, unknown>;
+    expect(body.passed).toBe(true);
+
+    // Baseline is the element's own 200×100 box — not a 1280-wide full page.
+    const png = PNG.sync.read(readFileSync(String(body.baseline_path)));
+    expect(png.width).toBe(200);
+    expect(png.height).toBe(100);
+    expect(isGreen(avgColor(png, 60, 30, 80, 40))).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -168,4 +193,8 @@ function avgColor(
 
 function isRed({ r, g, b }: { r: number; g: number; b: number }): boolean {
   return r > 200 && g < 80 && b < 80;
+}
+
+function isGreen({ r, g, b }: { r: number; g: number; b: number }): boolean {
+  return g > 200 && r < 80 && b < 80;
 }

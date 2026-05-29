@@ -17,7 +17,7 @@ import type { ToolModule } from "../types.js";
 export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
   name: ToolNames.visualDiff,
   description:
-    "Capture a screenshot and compare against a named baseline under ./.rolepod-uiproof/baselines/. First call for a baseline_id seeds the baseline (passed=true, diff_pct=0). Subsequent calls return the diff percentage and an annotated diff image. By default (settle=true) the page is scrolled to trigger scroll-reveal/lazy content, network-idled, and animations frozen before capture — so reveal-heavy pages are not baselined while invisible.",
+    "Capture a screenshot and compare against a named baseline under ./.rolepod-uiproof/baselines/. First call for a baseline_id seeds the baseline (passed=true, diff_pct=0). Subsequent calls return the diff percentage and an annotated diff image. By default (settle=true) the page is scrolled to trigger scroll-reveal/lazy content, network-idled, and animations frozen before capture — so reveal-heavy pages are not baselined while invisible. Pass `selector` to scope the diff to one element (region-scoped) instead of the full page.",
   inputShape: visualDiffShape,
   build(ctx) {
     return safeHandler(async (args: VisualDiffInput) => {
@@ -42,11 +42,12 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
         if (args.settle) {
           await engine.settle({ id: session.id, platform: session.platform });
         }
-        const buf = await engine.screenshot(
-          { id: session.id, platform: session.platform },
-          true,
-          { freezeMotion: args.settle },
-        );
+        const handle = { id: session.id, platform: session.platform };
+        const buf = args.selector
+          ? await engine.screenshotElement(handle, args.selector, {
+              freezeMotion: args.settle,
+            })
+          : await engine.screenshot(handle, true, { freezeMotion: args.settle });
         const currentPath = await ctx.store.writeScreenshot(runDir, buf, "current");
 
         await ctx.store.ensureDir(ctx.store.baselineDir);
@@ -73,7 +74,12 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
               { type: "baseline", path: baselinePath },
               { type: "screenshot", path: currentPath },
             ],
-            metadata: { baseline_id: args.baseline_id, seeded: true, settled: args.settle },
+            metadata: {
+              baseline_id: args.baseline_id,
+              seeded: true,
+              settled: args.settle,
+              ...(args.selector ? { selector: args.selector } : {}),
+            },
           });
           return ok({
             run_id: runId,
@@ -145,6 +151,7 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
             total_pixels: total,
             threshold_pct: args.threshold_pct,
             settled: args.settle,
+            ...(args.selector ? { selector: args.selector } : {}),
           },
         });
 
