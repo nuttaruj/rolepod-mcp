@@ -7,6 +7,18 @@ release.
 
 ## [Unreleased]
 
+### Changed
+
+- **Spawn configs pin the npm version** — every `npx` spawn config
+  (`.mcp.json`, `.cursor/mcp.json`, `gemini-extension.json`,
+  `.claude-plugin/plugin.json`, and the `plugins/` mirror) now requests
+  `@rolepod/uiproof@<version>` instead of the bare package. The bare spec let
+  the npx cache pin a consumer to whatever version was latest at first install
+  and never upgrade; pinning makes the cache key version-specific, so updating
+  the plugin actually delivers the new tool code. A `spawn_version_pin` test
+  enforces that the pins track `package.json`, so a version bump can't ship
+  without moving them in lockstep (and publishing the matching npm version).
+
 ## [0.9.0] — 2026-05-29
 
 ### Added
