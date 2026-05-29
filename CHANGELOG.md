@@ -23,6 +23,10 @@ release.
   transform) + bounding box of the first element matching a selector, so a
   redesign can match a reference exactly instead of guessing tokens. 30 tools
   total now (22 atomic + 8 composite).
+- **`browser_screenshot` selector + freeze_motion** — the atomic screenshot
+  tool can now capture a single element's bounding box (`selector`, web-only)
+  and freeze animations (`freeze_motion`), and it reports the capture's
+  width/height (previously returned as `undefined`).
 
 ### Changed
 
