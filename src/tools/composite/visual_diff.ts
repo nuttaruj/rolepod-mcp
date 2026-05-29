@@ -17,7 +17,7 @@ import type { ToolModule } from "../types.js";
 export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
   name: ToolNames.visualDiff,
   description:
-    "Capture a screenshot and compare against a named baseline under ./.rolepod-uiproof/baselines/. First call for a baseline_id seeds the baseline (passed=true, diff_pct=0). Subsequent calls return the diff percentage and an annotated diff image.",
+    "Capture a screenshot and compare against a named baseline under ./.rolepod-uiproof/baselines/. First call for a baseline_id seeds the baseline (passed=true, diff_pct=0). Subsequent calls return the diff percentage and an annotated diff image. By default (settle=true) the page is scrolled to trigger scroll-reveal/lazy content, network-idled, and animations frozen before capture — so reveal-heavy pages are not baselined while invisible.",
   inputShape: visualDiffShape,
   build(ctx) {
     return safeHandler(async (args: VisualDiffInput) => {
@@ -39,9 +39,13 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
       }
 
       try {
+        if (args.settle) {
+          await engine.settle({ id: session.id, platform: session.platform });
+        }
         const buf = await engine.screenshot(
           { id: session.id, platform: session.platform },
           true,
+          { freezeMotion: args.settle },
         );
         const currentPath = await ctx.store.writeScreenshot(runDir, buf, "current");
 
@@ -69,7 +73,7 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
               { type: "baseline", path: baselinePath },
               { type: "screenshot", path: currentPath },
             ],
-            metadata: { baseline_id: args.baseline_id, seeded: true },
+            metadata: { baseline_id: args.baseline_id, seeded: true, settled: args.settle },
           });
           return ok({
             run_id: runId,
@@ -140,6 +144,7 @@ export const visualDiffTool: ToolModule<typeof visualDiffShape> = {
             diff_pixels: diffPixels,
             total_pixels: total,
             threshold_pct: args.threshold_pct,
+            settled: args.settle,
           },
         });
 

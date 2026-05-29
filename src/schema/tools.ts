@@ -502,6 +502,14 @@ export const visualDiffShape = {
   close_on_finish: z.boolean().default(true),
   /** Pixel sensitivity for pixelmatch (0 = strict, 1 = lax). Default 0.1. */
   pixel_threshold: z.number().min(0).max(1).default(0.1),
+  /**
+   * Bring the page to a fully-rendered, deterministic state before capture:
+   * scroll the full height to trigger scroll-reveal (opacity:0 +
+   * IntersectionObserver) and lazy media, wait for network idle, return to
+   * top, and freeze animations/transitions. Default ON — turn off only for
+   * static pages where the extra scroll/wait is wasted.
+   */
+  settle: z.boolean().default(true),
 } as const;
 export const visualDiffSchema = z.object(visualDiffShape);
 export type VisualDiffInput = z.infer<typeof visualDiffSchema>;

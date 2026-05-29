@@ -29,6 +29,7 @@ import type {
   Engine,
   FillField,
   OpenOptions,
+  ScreenshotOptions,
   Session,
   WaitCondition,
 } from "./Engine.js";
@@ -421,9 +422,95 @@ export class PlaywrightEngine implements Engine {
     this.invalidateRefs(s);
   }
 
-  async screenshot(session: Session, fullPage = false): Promise<Buffer> {
+  async screenshot(
+    session: Session,
+    fullPage = false,
+    opts: ScreenshotOptions = {},
+  ): Promise<Buffer> {
     const s = this.requireSession(session.id);
-    return this.activePage(s).screenshot({ fullPage });
+    return this.activePage(s).screenshot({
+      fullPage,
+      ...(opts.freezeMotion ? { animations: "disabled", caret: "hide" } : {}),
+    });
+  }
+
+  /**
+   * Bring the page to a deterministic, fully-rendered state before a
+   * capture. A fullPage screenshot resizes the viewport in one step and
+   * never fires the scroll/intersection events that scroll-reveal widgets
+   * (opacity:0 + IntersectionObserver) and lazy media wait for — so an
+   * immediate capture records them invisible. settle() steps down a
+   * viewport at a time to trigger every observer + lazy load, waits for the
+   * network to go idle, then returns to the top. Best-effort: a networkidle
+   * timeout is swallowed (pages with persistent sockets never idle).
+   *
+   * Pair with `screenshot(…, { freezeMotion: true })` — settle reveals
+   * the content, freezeMotion makes the pixels deterministic.
+   */
+  async settle(
+    session: Session,
+    opts: {
+      scroll?: boolean;
+      timeoutMs?: number;
+      quietMs?: number;
+      maxScrollSteps?: number;
+    } = {},
+  ): Promise<{ scrolled_steps: number; capped: boolean }> {
+    const s = this.requireSession(session.id);
+    const page = this.activePage(s);
+    const scroll = opts.scroll ?? true;
+    const timeoutMs = opts.timeoutMs ?? 10_000;
+    const quietMs = opts.quietMs ?? 400;
+    const maxSteps = opts.maxScrollSteps ?? 40;
+
+    await page
+      .waitForLoadState("networkidle", { timeout: timeoutMs })
+      .catch(() => undefined);
+
+    let steps = 0;
+    let capped = false;
+    if (scroll) {
+      for (; steps < maxSteps; steps++) {
+        const atBottom = await page.evaluate(() => {
+          const g = globalThis as unknown as {
+            scrollTo: (x: number, y: number) => void;
+            scrollY: number;
+            innerHeight: number;
+            document: { body: { scrollHeight: number } };
+          };
+          const next = g.scrollY + g.innerHeight;
+          g.scrollTo(0, next);
+          // Re-read scrollHeight each step — lazy content grows the page.
+          return next >= g.document.body.scrollHeight - g.innerHeight;
+        });
+        await page.waitForTimeout(quietMs);
+        if (atBottom) {
+          steps += 1;
+          break;
+        }
+      }
+      capped = steps >= maxSteps;
+      if (capped) {
+        log.warn("settle scroll hit maxScrollSteps — page may be longer", {
+          session_id: session.id,
+          max_steps: maxSteps,
+        });
+      }
+      // Settle anything the scroll kicked off (lazy images, fetches), then
+      // return to the top so fixed/sticky elements render predictably.
+      await page
+        .waitForLoadState("networkidle", { timeout: timeoutMs })
+        .catch(() => undefined);
+      await page.evaluate(() => {
+        (
+          globalThis as unknown as { scrollTo: (x: number, y: number) => void }
+        ).scrollTo(0, 0);
+      });
+      await page.waitForTimeout(quietMs);
+    }
+
+    this.invalidateRefs(s);
+    return { scrolled_steps: steps, capped };
   }
 
   async navigate(session: Session, url: string): Promise<void> {

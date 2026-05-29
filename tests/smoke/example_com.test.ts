@@ -20,7 +20,8 @@ beforeAll(() => {
   const engine = new PlaywrightEngine();
   registry = new SessionRegistry({ idleTimeoutMs: 0 });
   registry.register("web", engine);
-  store = new ArtifactStore({ rootDir: join(tmpRoot, "artifacts") });
+  // Pin standalone so a stray .rolepod/ in the cwd can't flip run_id format.
+  store = new ArtifactStore({ rootDir: join(tmpRoot, "artifacts"), mode: "standalone" });
   ctx = { registry, store };
 });
 

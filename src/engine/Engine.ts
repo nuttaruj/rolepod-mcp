@@ -11,6 +11,16 @@ import type { A11yNode } from "../schema/tools.js";
 export type Platform = "web" | "ios" | "android";
 export type Direction = "up" | "down" | "left" | "right";
 
+/**
+ * Capture-time options. `freezeMotion` maps to Playwright's native
+ * `animations: "disabled"` + `caret: "hide"` so finite animations/
+ * transitions fast-forward to their end state and infinite ones cancel —
+ * a deterministic capture without hand-injected CSS. Ignored on mobile.
+ */
+export type ScreenshotOptions = {
+  freezeMotion?: boolean;
+};
+
 export type WaitCondition =
   | { kind: "text_visible"; text: string }
   | { kind: "ref_exists"; query: string }
@@ -97,7 +107,11 @@ export interface Engine {
     cond: WaitCondition,
     timeoutMs?: number,
   ): Promise<void>;
-  screenshot(session: Session, fullPage?: boolean): Promise<Buffer>;
+  screenshot(
+    session: Session,
+    fullPage?: boolean,
+    opts?: ScreenshotOptions,
+  ): Promise<Buffer>;
   /** Web-only. Throws `unsupported_platform` on mobile sessions. */
   navigate(session: Session, url: string): Promise<void>;
 

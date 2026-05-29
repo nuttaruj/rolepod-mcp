@@ -30,7 +30,8 @@ beforeAll(() => {
   const engine = new PlaywrightEngine();
   registry = new SessionRegistry({ idleTimeoutMs: 0 });
   registry.register("web", engine);
-  store = new ArtifactStore({ rootDir: join(tmpRoot, "artifacts") });
+  // Pin standalone so a stray .rolepod/ in the cwd can't flip run_id format.
+  store = new ArtifactStore({ rootDir: join(tmpRoot, "artifacts"), mode: "standalone" });
   ctx = { registry, store };
 });
 
@@ -135,6 +136,7 @@ describe("visual_diff", () => {
       threshold_pct: 0.05,
       pixel_threshold: 0.1,
       close_on_finish: true,
+      settle: false,
     });
     const seed = first.structuredContent as {
       diff_pct: number;
@@ -152,6 +154,7 @@ describe("visual_diff", () => {
       threshold_pct: 0.05,
       pixel_threshold: 0.1,
       close_on_finish: true,
+      settle: false,
     });
     const diff = second.structuredContent as {
       diff_pct: number;
