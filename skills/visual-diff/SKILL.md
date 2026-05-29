@@ -17,9 +17,10 @@ MCP server. No fallback (D-024).
 
 - No baseline exists yet AND the user is not OK with this run becoming
   the baseline (the first call always seeds).
-- The page has highly dynamic content (rotating banners, timestamps,
-  animations) — the diff will be noisy. Either freeze the dynamic content
-  via a flag or pick a different verification approach.
+- The page has truly dynamic *content* (rotating banners, live timestamps) —
+  the diff will be noisy. `settle` (default on) already freezes CSS animations
+  and reveals scroll content; for changing content, scope with `selector` or
+  pick a different verification approach.
 
 ## Inputs
 
@@ -29,13 +30,24 @@ MCP server. No fallback (D-024).
   capture share dimensions. Default uses the browser's natural viewport.
 - `threshold_pct` — tolerated diff fraction. Default `0.1` (= 10%).
 - `pixel_threshold` — pixelmatch sensitivity 0..1. Default `0.1`.
+- `settle` — default `true`. Before capture, scroll the full page to trigger
+  scroll-reveal (opacity:0 + IntersectionObserver) and lazy media, wait for
+  network idle, freeze animations, return to top. Set `false` for static pages
+  or to reproduce the legacy immediate capture.
+- `selector` — optional CSS selector. Diff only that element's bounding box
+  instead of the whole page (region-scoped). Use a distinct `baseline_id` per
+  region.
 
 ## Outputs
 
 - `run_id` — folder under `./.rolepod-uiproof/artifacts/`.
 - `diff_pct` — fraction of differing pixels.
-- `passed` — `diff_pct <= threshold_pct`.
+- `passed` — `diff_pct <= threshold_pct` (and dimensions match).
 - `baseline_path`, `current_path`, `diff_image_path`.
+- `dimension_mismatch` + `dimensions` — when baseline and current differ in
+  size, the overlap is diffed and `dimensions` carries baseline/current sizes
+  + width/height deltas. A mismatch fails the check; re-seed if the new size is
+  intended.
 
 ## Process
 

@@ -4,14 +4,14 @@
 
 One MCP server, one tool surface, eight skills you invoke from chat. Web is production-ready via Playwright; iOS and Android use Appium (same client as alumnium — needs a local Appium daemon + simulator/emulator, or a real device). No internal LLM — your Lead agent drives every action.
 
-**v0.7 adds the measurement surface — Core Web Vitals, page-weight budgets, and on-page SEO.** 29 tools total (21 atomic + 8 composite). New in v0.7: `/measure-cwv` (LCP/INP/CLS via PerformanceObserver), `/audit-page-budget` (HAR-classified byte budget with third-party tagging), `/audit-seo` (DOM-based on-page SEO: title, meta, h1, lang, viewport, canonical, robots, OG/Twitter Cards, JSON-LD, hreflang, favicon). v0.5 had completed the UI verification surface (interaction + capture).
+**v0.8 sharpens `visual_diff` for animated UIs** — `settle` (default on) scrolls + freezes the page so scroll-reveal / lazy content is captured instead of baselined blank; `selector` scopes a diff to one element; dimension mismatches degrade gracefully; plus a new `extract_computed_style` tool that reads an element's computed CSS for pixel-faithful redesign. 30 tools total (22 atomic + 8 composite). v0.7 added the measurement surface — Core Web Vitals, page-weight budgets, and on-page SEO. New in v0.7: `/measure-cwv` (LCP/INP/CLS via PerformanceObserver), `/audit-page-budget` (HAR-classified byte budget with third-party tagging), `/audit-seo` (DOM-based on-page SEO: title, meta, h1, lang, viewport, canonical, robots, OG/Twitter Cards, JSON-LD, hreflang, favicon). v0.5 had completed the UI verification surface (interaction + capture).
 
 ## What it helps with
 
 - **Verify a UI change in seconds.** `/verify-ui` opens a real browser, runs your steps, checks your assertions, saves a screenshot + replay bundle (optionally HAR + video + trace + console logs).
 - **Gate merges on "no regressions during this flow".** `/check-errors` runs a flow with strict `no_console_errors` + `no_failed_requests` assertions baked in. PR-gate or post-merge smoke check.
 - **Catch a11y regressions before merge.** `/audit-a11y` runs axe-core against WCAG-A / AA / AAA and returns issues grouped by severity, with WCAG references and fix links.
-- **Lock down the visual contract.** `/visual-diff` captures a screenshot and compares against a named baseline under `./.rolepod-uiproof/baselines/`. First call seeds; subsequent calls diff.
+- **Lock down the visual contract.** `/visual-diff` captures a screenshot and compares against a named baseline under `./.rolepod-uiproof/baselines/`. First call seeds; subsequent calls diff. By default it settles the page first (scrolls to trigger reveal/lazy content + freezes animations) so reveal-heavy pages are captured fully-rendered; pass `selector` to diff a single element.
 - **Turn an interactive verify run into a real test file.** `/scaffold-e2e` transcribes a replay bundle into Playwright Test, Vitest+Playwright, or pytest+selenium — with first-class codegen for every step + expect kind.
 - **Reproduce + minimize a bug deterministically.** `/verify-ui` with `mode: "reproduce"` runs ddmin step-elimination to find the shortest still-reproducing sequence.
 
@@ -22,7 +22,7 @@ One MCP server, one tool surface, eight skills you invoke from chat. Web is prod
 | `/verify-ui` | `rolepod_verify_ui_flow` | Drive a session through steps, evaluate assertions (incl. console errors / failed requests / specific request made / response status), save evidence (screenshot / console / HAR / video / trace / a11y_tree) + replay bundle. `mode: assert` or `reproduce` with optional ddmin minimization. |
 | `/check-errors` | `rolepod_verify_ui_flow` | Thin wrapper with strict `no_console_errors` + `no_failed_requests` baked in. Use as PR-gate or post-merge smoke. |
 | `/audit-a11y` | `rolepod_audit_a11y` | axe-core audit at WCAG-A / AA / AAA. `scope: "page"` or `scope: { ref }`. Markdown or JSON report. |
-| `/visual-diff` | `rolepod_visual_diff` | Pixel diff against a named baseline. Auto-seeds on first call. Configurable threshold + pixelmatch sensitivity. |
+| `/visual-diff` | `rolepod_visual_diff` | Pixel diff against a named baseline. Auto-seeds on first call. Configurable threshold + pixelmatch sensitivity. `settle` (default on) scrolls + freezes the page so scroll-reveal/lazy content is captured; `selector` scopes the diff to one element; size mismatches degrade gracefully (overlap diff + deltas, not a hard error). |
 | `/scaffold-e2e` | `rolepod_scaffold_e2e` | Generate a runnable test file from a scenario + optional replay bundle. Three target frameworks. v0.5 codegen handles every step + expect kind. |
 | `/measure-cwv` | `rolepod_measure_cwv` | Measure Core Web Vitals (LCP / INP / CLS) on a live page via PerformanceObserver. Verdict per web.dev good / needs-improvement / poor bands. Chromium-only. |
 | `/audit-page-budget` | `rolepod_audit_page_budget` | HAR-classified byte budget per asset category (js/css/image/font) with third-party tagging. Compares against declared budget, returns graduated pass/warn/fail. |
@@ -34,9 +34,9 @@ Every skill is **single-backend** (D-024) — it calls the rolepod-uiproof serve
 
 `rolepod-uiproof` works either as a **standalone** browser MCP for any project, or **combined** with the [`rolepod`](https://github.com/nuttaruj/rolepod) parent plugin (v2.7+) where it becomes the Verify phase provider for UI artifacts.
 
-**Standalone** (default): use the 5 skills directly as atomic browser tools. Evidence saved under `./.rolepod-uiproof/artifacts/<run>/` with a `manifest.json` per Extension Protocol v1.
+**Standalone** (default): use the 8 skills directly as atomic browser tools. Evidence saved under `./.rolepod-uiproof/artifacts/<run>/` with a `manifest.json` per Extension Protocol v1.
 
-**Combined with rolepod parent**: when the parent's SessionStart hook drops the marker file `<git-root>/.rolepod/parent-active` (single line of content = the protocol version, e.g. `v1`), uiproof writes evidence to `<git-root>/.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/` instead, where parent's `check-work` skill auto-aggregates manifests into the verify report. The marker is read fresh per ArtifactStore construction; no env-var, no daemon. To force combined mode without a parent session: `mkdir -p .rolepod && echo v1 > .rolepod/parent-active`. No skill changes — same 26 tools, same 5 skills, smarter routing.
+**Combined with rolepod parent**: when the parent's SessionStart hook drops the marker file `<git-root>/.rolepod/parent-active` (single line of content = the protocol version, e.g. `v1`), uiproof writes evidence to `<git-root>/.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/` instead, where parent's `check-work` skill auto-aggregates manifests into the verify report. The marker is read fresh per ArtifactStore construction; no env-var, no daemon. To force combined mode without a parent session: `mkdir -p .rolepod && echo v1 > .rolepod/parent-active`. No skill changes — same 30 tools, same 8 skills, smarter routing.
 
 | Install | Unlocks |
 |---|---|
@@ -168,7 +168,7 @@ Restart Antigravity. Verify the MCP server is connected via Settings → Customi
 **Notes:**
 - Antigravity's `mcp_config.json` is shared across all Agy tools (CLI + IDE) — one config, both surfaces.
 - Skills are auto-discovered from `~/.gemini/skills/` — no manifest needed.
-- The 29 MCP tools surface in chat the same way as in Claude Code / Cursor / Codex.
+- The 30 MCP tools surface in chat the same way as in Claude Code / Cursor / Codex.
 
 ### Direct npm (any MCP-aware tool)
 
@@ -185,7 +185,7 @@ Use this when your tool reads a standard `mcpServers` config (most non-CLI MCP c
 }
 ```
 
-29 MCP tools (21 `rolepod_browser_*` atomics + 8 composites including `verify_ui_flow`, `audit_a11y`, `visual_diff`, `scaffold_e2e`, `extract_ui_state`, `measure_cwv`, `audit_page_budget`, `audit_seo`) will appear in your client. Skills are not surfaced via this path — call the tools by name.
+30 MCP tools (21 `rolepod_browser_*` atomics + `rolepod_extract_computed_style` + 8 composites including `verify_ui_flow`, `audit_a11y`, `visual_diff`, `scaffold_e2e`, `extract_ui_state`, `measure_cwv`, `audit_page_budget`, `audit_seo`) will appear in your client. Skills are not surfaced via this path — call the tools by name.
 
 ## Quick start
 
@@ -232,7 +232,7 @@ npx rolepod-uiproof doctor
 
 ## What's inside
 
-- **29 MCP tools** — 21 atomic browser/mobile primitives (`browser_open`, `_close`, `_snapshot`, `_click`, `_type`, `_key`, `_scroll`, `_wait_for`, `_screenshot`, `_navigate`, plus v0.5 additions `_hover`, `_drag`, `_fill_form`, `_upload_file`, `_handle_dialog`, `_console`, `_network`, `_set_env`, `_evaluate`, `_pages`, `_switch_page`) + 8 composites (`verify_ui_flow`, `audit_a11y`, `visual_diff`, `scaffold_e2e`, `extract_ui_state`, and v0.7: `measure_cwv`, `audit_page_budget`, `audit_seo`). All prefixed `rolepod_*` to namespace away from other MCP servers.
+- **30 MCP tools** — 22 atomic browser/mobile primitives (`browser_open`, `_close`, `_snapshot`, `_click`, `_type`, `_key`, `_scroll`, `_wait_for`, `_screenshot`, `_navigate`, plus v0.5 additions `_hover`, `_drag`, `_fill_form`, `_upload_file`, `_handle_dialog`, `_console`, `_network`, `_set_env`, `_evaluate`, `_pages`, `_switch_page`, and v0.8 `_extract_computed_style`) + 8 composites (`verify_ui_flow`, `audit_a11y`, `visual_diff`, `scaffold_e2e`, `extract_ui_state`, and v0.7: `measure_cwv`, `audit_page_budget`, `audit_seo`). All prefixed `rolepod_*` to namespace away from other MCP servers.
 - **2 engines behind one interface** — `PlaywrightEngine` for web (Chromium / Firefox / WebKit), `AppiumEngine` for iOS XCUITest + Android UIAutomator2. The Lead sees one unified `A11yNode` shape regardless of platform.
 - **Stable refs with explicit invalidation (D-010)** — every state-changing call invalidates prior refs; the engine returns a structured `stale_ref` error if you try to reuse one. No silent locator drift.
 - **Replay bundles** — every `/verify-ui` run writes a JSON replay you can re-run later with `npx rolepod-uiproof replay <bundle.json>`, agent-free.

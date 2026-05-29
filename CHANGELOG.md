@@ -7,6 +7,42 @@ release.
 
 ## [Unreleased]
 
+## [0.8.0] — 2026-05-29
+
+### Added
+
+- **`visual_diff` settle + freeze-motion** — before capture the page is
+  scrolled its full height to trigger scroll-reveal (opacity:0 +
+  IntersectionObserver) and lazy media, network-idled, then animations are
+  frozen via Playwright's native `animations: "disabled"`. Reveal-heavy pages
+  are no longer baselined while invisible. New `settle` flag (default **on**).
+- **`visual_diff` region scope** — pass `selector` (CSS) to diff a single
+  element's bounding box instead of the whole page.
+- **`extract_computed_style`** — new read-only tool. Returns the computed CSS
+  (typography, color, background/gradient, spacing, border, shadow, layout,
+  transform) + bounding box of the first element matching a selector, so a
+  redesign can match a reference exactly instead of guessing tokens. 30 tools
+  total now (22 atomic + 8 composite).
+
+### Changed
+
+- **BREAKING (baselines): `visual_diff` `settle` defaults to on.** Captures now
+  reflect the fully-rendered, animation-frozen page, so baselines seeded before
+  0.8.0 on animated/reveal pages will mismatch on the next diff. **Re-seed
+  affected baselines** (delete the PNG under `./.rolepod-uiproof/baselines/`
+  and run once). Pass `settle: false` to keep the legacy immediate capture.
+- **`visual_diff` dimension mismatch is no longer a hard error** — a
+  baseline/current size difference now diffs the overlapping region and reports
+  `dimension_mismatch` + width/height deltas (still fails the check) instead of
+  throwing `engine_error`.
+
+### Fixed
+
+- Schema export (`dist/schemas/tools.json`) and the public `src/index.ts`
+  re-export list were missing newly registered tools. Added a parity guard to
+  `export-schemas` — the build now fails if any registered tool lacks an
+  exported schema.
+
 ## [0.7.1] — 2026-05-28
 
 ### Added

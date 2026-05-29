@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "rolepod-uiproof",
-  "description": "Multi-platform UI / mobile automation MCP server + 5 shipped skills (verify-ui, audit-a11y, visual-diff, scaffold-e2e, check-errors) for AI coding agents.",
+  "description": "Multi-platform UI / mobile automation MCP server + 8 shipped skills (verify-ui, check-errors, audit-a11y, visual-diff, scaffold-e2e, measure-cwv, audit-page-budget, audit-seo) for AI coding agents.",
   "owner": {
     "name": "nuttaruj",
     "url": "https://github.com/nuttaruj"
@@ -10,8 +10,8 @@
     {
       "name": "rolepod-uiproof",
       "source": "./",
-      "description": "26 MCP tools (21 atomic browser/mobile primitives + 5 composite workflows) + 5 user-invocable skills. Works standalone today; pair with the `rolepod` parent plugin (detected via the marker file `<git-root>/.rolepod/parent-active`) and uiproof becomes the verify-phase UI provider — evidence routes to `<git-root>/.rolepod/evidence/` with `manifest.json` per Extension Protocol v1. Replaces chrome-devtools-mcp and playwright-mcp for UI testing. Web production-ready via Playwright; mobile (iOS/Android) via Appium scaffolded — see `rolepod-uiproof doctor` for readiness.",
-      "version": "0.7.1",
+      "description": "30 MCP tools (22 atomic browser/mobile primitives + 8 composite workflows) + 8 user-invocable skills. Works standalone today; pair with the `rolepod` parent plugin (detected via the marker file `<git-root>/.rolepod/parent-active`) and uiproof becomes the verify-phase UI provider — evidence routes to `<git-root>/.rolepod/evidence/` with `manifest.json` per Extension Protocol v1. Replaces chrome-devtools-mcp and playwright-mcp for UI testing. Web production-ready via Playwright; mobile (iOS/Android) via Appium scaffolded — see `rolepod-uiproof doctor` for readiness.",
+      "version": "0.8.0",
       "author": {
         "name": "nuttaruj"
       },
