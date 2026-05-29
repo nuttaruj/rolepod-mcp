@@ -7,6 +7,40 @@ release.
 
 ## [Unreleased]
 
+## [0.9.0] — 2026-05-29
+
+### Added
+
+- **`verify_ui_flow` `scroll` + `settle` steps** — a flow can now trigger
+  scroll-reveal content (`opacity:0` / `visibility:hidden` +
+  IntersectionObserver) that only appears after a real scroll.
+  `{ kind: "scroll", direction, amount? }` scrolls by a delta;
+  `{ kind: "settle" }` scrolls the full page to fire every observer + lazy
+  load, network-idles, then returns to top (web-only). Closes the gap where a
+  reveal-only page could not be driven through a flow without the gated
+  `evaluate` step.
+- **Evidence dir self-ignores in git** — on its first write `ArtifactStore`
+  drops a `.gitignore` containing `*` at the evidence/artifacts root
+  (`./.rolepod-uiproof/artifacts/` standalone, `<git-root>/.rolepod/evidence/`
+  with-parent), so a consumer's `git add -A` no longer sweeps transient
+  screenshots + manifests into a commit. Baselines live elsewhere and stay
+  commit-able; in with-parent mode the parent's own `.rolepod/` files are
+  untouched.
+
+### Fixed
+
+- **`dist/schemas/tools.json` was empty for every tool** — the build emitted a
+  property-less `{$schema}` for all 30 tools because `build:schemas` ran the
+  v3-only `zod-to-json-schema` against zod v4 schemas. Switched to zod's native
+  `z.toJSONSchema`; the export now carries full per-tool input schemas. Added a
+  non-empty guard to `build:schemas` so it fails loudly rather than shipping
+  useless schemas again. (Runtime MCP `tools/list` was unaffected — the SDK
+  uses its own converter.)
+
+### Removed
+
+- `zod-to-json-schema` build dependency — replaced by native `z.toJSONSchema`.
+
 ## [0.8.0] — 2026-05-29
 
 ### Added

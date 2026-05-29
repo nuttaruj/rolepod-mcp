@@ -78,7 +78,8 @@ own license; this section is acknowledgement only.
 
 - `@modelcontextprotocol/sdk` — MIT — MCP protocol implementation.
 - `playwright` — Apache-2.0 — Web automation engine for the `web` platform.
-- `zod` — MIT — Tool input/output schema validation.
+- `zod` — MIT — Tool input/output schema validation, and JSON-Schema export
+  (`z.toJSONSchema`) for `dist/schemas/tools.json`.
 - `js-yaml` — MIT — Parses Playwright's `ariaSnapshot({mode:'ai'})` YAML
   output into the unified `A11yNode` tree.
 - `@axe-core/playwright` — MPL-2.0 — Powers the `rolepod_audit_a11y`
@@ -97,8 +98,3 @@ own license; this section is acknowledgement only.
 - `webdriverio` — MIT — Loaded lazily by `AppiumEngine` when a mobile
   session is requested. Web-only installs skip it via npm
   `optionalDependencies`.
-
-## Build-time-only dependencies
-
-- `zod-to-json-schema` — ISC — Used by `npm run build:schemas` to emit
-  `dist/schemas/tools.json`. Not shipped at runtime.

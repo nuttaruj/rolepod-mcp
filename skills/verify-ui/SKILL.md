@@ -61,6 +61,8 @@ Each step is one of:
 - `{ "kind": "set_env", "viewport": { "width": 375, "height": 812 } }` — also accepts offline, geolocation, color_scheme, reduced_motion, extra_headers, network_throttle, cpu_throttle
 - `{ "kind": "switch_page", "index": 1 }` — multi-page (popups, target=_blank)
 - `{ "kind": "evaluate", "script": "return document.title" }` — gated by `ROLEPOD_ALLOW_EVAL=1`
+- `{ "kind": "scroll", "direction": "down", "amount": 1500 }` — scroll by a delta (`amount` defaults to 400px); use to fire scroll-reveal / IntersectionObserver content
+- `{ "kind": "settle" }` — scroll the full page to trigger **all** reveals + lazy loads, network-idle, then return to top (web-only). Reach for this on reveal/animation-heavy pages so `text_visible` assertions see the settled state instead of an `opacity:0` placeholder.
 
 ### `expect` — assertions
 

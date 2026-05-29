@@ -43,7 +43,7 @@ Every skill is **single-backend** (D-024) — it calls the rolepod-uiproof serve
 | uiproof alone | Browser test, a11y audit, visual diff, e2e scaffold, error gate |
 | uiproof + rolepod parent | + verify-phase aggregation, evidence handoff to `check-work` |
 
-The `manifest.json` is written in BOTH modes, so installing the parent later still lets historic artifacts get picked up. Baselines for `/visual-diff` always live in `./.rolepod-uiproof/baselines/` regardless of mode — they are user-curated configuration, not per-run evidence.
+The `manifest.json` is written in BOTH modes, so installing the parent later still lets historic artifacts get picked up. Baselines for `/visual-diff` always live in `./.rolepod-uiproof/baselines/` regardless of mode — they are user-curated configuration, not per-run evidence. The evidence/artifacts root self-ignores in git: on its first write uiproof drops a `.gitignore` (`*`) there, so a `git add -A` in your repo never sweeps transient screenshots + manifests into a commit. Baselines are left out of that ignore — commit them if you want a shared golden set.
 
 ## Install
 

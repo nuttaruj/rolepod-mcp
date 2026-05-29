@@ -500,6 +500,13 @@ async function runStep(
       await engine.evaluate(session.id, step.script);
       return;
     }
+    case "scroll":
+      await engine.scroll(session, step.direction, step.amount);
+      return;
+    case "settle":
+      requirePlaywright(engine, "settle");
+      await engine.settle({ id: session.id, platform: session.platform });
+      return;
   }
 }
 

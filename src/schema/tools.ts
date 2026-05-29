@@ -425,6 +425,16 @@ export const verifyStepSchema = z.discriminatedUnion("kind", [
     index: z.number().int().nonnegative(),
   }),
   z.object({ kind: z.literal("evaluate"), script: z.string().min(1) }),
+  // v0.9 additions — reveal-on-scroll support (field finding #4)
+  z.object({
+    kind: z.literal("scroll"),
+    direction: z.enum(["up", "down", "left", "right"]).default("down"),
+    amount: z.number().int().positive().optional(),
+  }),
+  // Convenience: scroll the full page to trigger IntersectionObserver
+  // reveals + lazy content, network-idle, then return to top. Mirrors the
+  // one-shot settle used by visual_diff. Web-only (PlaywrightEngine).
+  z.object({ kind: z.literal("settle") }),
 ]);
 
 export const verifyExpectSchema = z.discriminatedUnion("kind", [

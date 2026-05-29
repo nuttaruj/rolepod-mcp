@@ -6,7 +6,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { z } from "zod";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const distEntry = resolve(here, "..", "dist", "index.js");
@@ -55,7 +55,10 @@ for (const [key, schema] of pairs) {
     console.error(`Missing ToolNames entry for ${key}`);
     process.exit(1);
   }
-  tools[toolName] = zodToJsonSchema(schema, { target: "jsonSchema2019-09" });
+  // zod v4 native converter. The external `zod-to-json-schema` package only
+  // understands zod v3 internals and silently emits an empty `{$schema}` for
+  // every zod-v4 schema — see the non-empty guard below.
+  tools[toolName] = z.toJSONSchema(schema, { unrepresentable: "any" });
 }
 
 // Parity guard: every registered tool MUST have an exported schema. Catches a
@@ -67,8 +70,23 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
+// Non-empty guard: a converter/zod-version mismatch can produce a schema with
+// no properties for every tool while still passing the parity check above.
+// Every rolepod_* tool takes at least one input, so an empty `properties` is a
+// broken export — fail loudly rather than ship useless schemas.
+const emptyTools = Object.entries(tools)
+  .filter(([, schema]) => Object.keys(schema?.properties ?? {}).length === 0)
+  .map(([name]) => name);
+if (emptyTools.length > 0) {
+  console.error(
+    `Schema export produced empty (property-less) schemas for: ${emptyTools.join(", ")}. ` +
+      `Likely a zod / JSON-Schema converter version mismatch.`,
+  );
+  process.exit(1);
+}
+
 const out = {
-  $schema: "https://json-schema.org/draft/2019-09/schema",
+  $schema: "https://json-schema.org/draft/2020-12/schema",
   rolepod_mcp_version: lib.SERVER_VERSION,
   tools,
 };

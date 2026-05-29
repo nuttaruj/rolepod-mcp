@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { log } from "../util/log.js";
@@ -67,6 +68,7 @@ export class ArtifactStore {
   readonly rootDir: string;
   readonly mode: ArtifactMode;
   private readonly baselineRoot: string;
+  private evidenceGitignoreEnsured = false;
 
   constructor(
     opts: { rootDir?: string; mode?: ArtifactMode } = {},
@@ -116,6 +118,7 @@ export class ArtifactStore {
       runId = `${prefix}_${ts}_${randomUUID().slice(0, 8)}`;
     }
 
+    await this.ensureEvidenceGitignore();
     const runDir = resolve(this.rootDir, runId);
     await mkdir(runDir, { recursive: true });
     log.debug("artifact run started", {
@@ -125,6 +128,27 @@ export class ArtifactStore {
       skill,
     });
     return { runId, runDir, skill, mode: this.mode };
+  }
+
+  /**
+   * Drop a self-ignoring `.gitignore` (`*`) at the evidence/artifacts root the
+   * first time we write there, so a consumer's `git add -A` never sweeps
+   * transient run artifacts (screenshots, manifests, diffs) into a commit.
+   * Scoped to the evidence root only: baselines live elsewhere and stay
+   * commit-able, and in with-parent mode the parent's own `.rolepod/` files
+   * are untouched. Mirrors how codegraph self-ignores `.codegraph/`.
+   */
+  private async ensureEvidenceGitignore(): Promise<void> {
+    if (this.evidenceGitignoreEnsured) return;
+    this.evidenceGitignoreEnsured = true;
+    const gitignorePath = resolve(this.rootDir, ".gitignore");
+    if (existsSync(gitignorePath)) return;
+    try {
+      await mkdir(this.rootDir, { recursive: true });
+      await writeFile(gitignorePath, "*\n", "utf8");
+    } catch (err) {
+      log.debug("could not write evidence .gitignore", { err: String(err) });
+    }
   }
 
   async writeScreenshot(
