@@ -82,14 +82,14 @@ own license; this section is acknowledgement only.
   (`z.toJSONSchema`) for `dist/schemas/tools.json`.
 - `js-yaml` — MIT — Parses Playwright's `ariaSnapshot({mode:'ai'})` YAML
   output into the unified `A11yNode` tree.
-- `@axe-core/playwright` — MPL-2.0 — Powers the `rolepod_audit_a11y`
+- `@axe-core/playwright` — MPL-2.0 — Powers the `audit_a11y`
   composite. axe-core is dual-licensed MPL-2.0 (weak copyleft); using it
   as an unmodified runtime dependency is compatible with this project's
   MIT license. We do not modify axe-core source.
 - `pixelmatch` — ISC — Pixel-level image comparison for
-  `rolepod_visual_diff`.
+  `visual_diff`.
 - `pngjs` — MIT — PNG encode/decode for baseline + diff images in
-  `rolepod_visual_diff`.
+  `visual_diff`.
 - `fast-xml-parser` — MIT — Parses Appium's XML page source in the
   mobile AT normalizers (`xcuitest.ts`, `uiautomator2.ts`).
 

@@ -5,7 +5,7 @@ description: Drive a real browser session through steps and assert expected outc
 
 # /verify-ui
 
-Single-backend skill. Calls **`rolepod_verify_ui_flow`** on the rolepod-uiproof
+Single-backend skill. Calls **`verify_ui_flow`** on the rolepod-uiproof
 MCP server and surfaces the structured result. No fallback (D-024) — if the
 tool is unavailable, this skill fails with a clear diagnostic.
 
@@ -100,7 +100,7 @@ Default: `["screenshot"]`. Available:
 
 ## Process
 
-1. Build the `rolepod_verify_ui_flow` input.
+1. Build the `verify_ui_flow` input.
 2. Call the tool.
 3. Report the structured result. On failure include `failed_at_step` +
    `failure_reason` + relevant evidence paths (screenshot, console.json

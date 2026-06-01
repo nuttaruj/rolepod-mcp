@@ -12,7 +12,7 @@ Conversational prompt (Claude Code, Cursor, etc.):
 > Email with "a@b.com", click "Place order". Expect the URL to match
 > `/order/[0-9]+` and the text "Order confirmed" to be visible.
 
-The skill builds the `rolepod_verify_ui_flow` input:
+The skill builds the `verify_ui_flow` input:
 
 ```json
 {

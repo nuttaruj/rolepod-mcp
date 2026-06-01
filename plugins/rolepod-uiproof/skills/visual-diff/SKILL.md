@@ -5,7 +5,7 @@ description: Capture a screenshot of the current UI and compare against a stored
 
 # /visual-diff
 
-Single-backend skill. Calls **`rolepod_visual_diff`** on the rolepod-uiproof
+Single-backend skill. Calls **`visual_diff`** on the rolepod-uiproof
 MCP server. No fallback (D-024).
 
 ## When to use
@@ -51,7 +51,7 @@ MCP server. No fallback (D-024).
 
 ## Process
 
-1. Build `rolepod_visual_diff` input from the user's intent.
+1. Build `visual_diff` input from the user's intent.
 2. Call the tool.
 3. Report `diff_pct`, `passed`, and the three image paths. If the baseline
    was just seeded, say so explicitly.

@@ -5,7 +5,7 @@ description: Drive a flow and fail if any console error or failed network reques
 
 # /check-errors
 
-Thin wrapper over **`rolepod_verify_ui_flow`** focused on the question:
+Thin wrapper over **`verify_ui_flow`** focused on the question:
 
 > Does this flow run cleanly — no console errors, no failed requests?
 
@@ -39,7 +39,7 @@ check before merging.
 
 ## Process
 
-Call `rolepod_verify_ui_flow` with:
+Call `verify_ui_flow` with:
 
 ```json
 {
@@ -114,7 +114,7 @@ Run artifacts are saved under:
 - **Standalone:** `.rolepod-uiproof/artifacts/<prefix>_<ts>_<uuid>/`
 - **With `rolepod` parent** (detected via the marker file `<git-root>/.rolepod/parent-active` written by the parent's SessionStart hook): `<git-root>/.rolepod/evidence/<ts>-rolepod-uiproof-<skill>/`
 
-Either way the run directory contains a `manifest.json` per Extension Protocol v1. Because `/check-errors` wraps `rolepod_verify_ui_flow`, the manifest is written by the underlying composite tool — same shape, same fields.
+Either way the run directory contains a `manifest.json` per Extension Protocol v1. Because `/check-errors` wraps `verify_ui_flow`, the manifest is written by the underlying composite tool — same shape, same fields.
 
 ## If the tool is unavailable
 

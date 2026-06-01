@@ -19,7 +19,7 @@ parent `rolepod`'s `~/.rolepod/`).
 │   ├── scaffold_…/
 │   │   └── <generated test file>
 │   └── snap_…/
-│       └── shot.png              from rolepod_browser_screenshot
+│       └── shot.png              from browser_screenshot
 └── baselines/
     ├── homepage-light.png        keyed by visual_diff baseline_id
     └── checkout-success.png

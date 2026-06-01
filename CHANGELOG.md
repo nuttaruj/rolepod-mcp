@@ -7,8 +7,20 @@ release.
 
 ## [Unreleased]
 
+## [0.10.0] — 2026-06-01
+
 ### Changed
 
+- **BREAKING: tool names dropped the `rolepod_` prefix** — every MCP tool is
+  now exposed under its bare name (`browser_open`, `verify_ui_flow`,
+  `visual_diff`, …) instead of `rolepod_browser_open` etc. The MCP server
+  namespace already scopes the tools, so the prefix was pure redundancy in the
+  client display. The five spawn configs also rename the `mcpServers` key from
+  `rolepod-uiproof` to `ui`, collapsing the doubled segment in the displayed
+  label (`plugin_rolepod-uiproof_rolepod-uiproof: rolepod browser open` →
+  `plugin_rolepod-uiproof_ui: browser open`). Agents that referenced tools by
+  the old `rolepod_*` names must update; permission grants keyed on the old
+  names reset.
 - **Spawn configs pin the npm version** — every `npx` spawn config
   (`.mcp.json`, `.cursor/mcp.json`, `gemini-extension.json`,
   `.claude-plugin/plugin.json`, and the `plugins/` mirror) now requests

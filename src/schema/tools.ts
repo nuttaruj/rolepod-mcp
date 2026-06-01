@@ -683,43 +683,43 @@ export type AuditSeoInput = z.infer<typeof auditSeoSchema>;
 
 // ---------------------------------------------------------------------------
 // Tool name registry — single source of truth for tool naming.
-// All names are prefixed `rolepod_*` per brief 03-tool-surface.md.
+// Bare names (no prefix); the MCP server namespace already scopes them.
 // ---------------------------------------------------------------------------
 
 export const ToolNames = {
-  browserOpen: "rolepod_browser_open",
-  browserClose: "rolepod_browser_close",
-  browserSnapshot: "rolepod_browser_snapshot",
-  browserClick: "rolepod_browser_click",
-  browserType: "rolepod_browser_type",
-  browserKey: "rolepod_browser_key",
-  browserScroll: "rolepod_browser_scroll",
-  browserWaitFor: "rolepod_browser_wait_for",
-  browserScreenshot: "rolepod_browser_screenshot",
-  browserNavigate: "rolepod_browser_navigate",
+  browserOpen: "browser_open",
+  browserClose: "browser_close",
+  browserSnapshot: "browser_snapshot",
+  browserClick: "browser_click",
+  browserType: "browser_type",
+  browserKey: "browser_key",
+  browserScroll: "browser_scroll",
+  browserWaitFor: "browser_wait_for",
+  browserScreenshot: "browser_screenshot",
+  browserNavigate: "browser_navigate",
   // v0.5 atomics
-  browserHover: "rolepod_browser_hover",
-  browserDrag: "rolepod_browser_drag",
-  browserFillForm: "rolepod_browser_fill_form",
-  browserUploadFile: "rolepod_browser_upload_file",
-  browserHandleDialog: "rolepod_browser_handle_dialog",
-  browserConsole: "rolepod_browser_console",
-  browserNetwork: "rolepod_browser_network",
-  browserSetEnv: "rolepod_browser_set_env",
-  browserEvaluate: "rolepod_browser_evaluate",
-  browserPages: "rolepod_browser_pages",
-  browserSwitchPage: "rolepod_browser_switch_page",
-  extractComputedStyle: "rolepod_extract_computed_style",
+  browserHover: "browser_hover",
+  browserDrag: "browser_drag",
+  browserFillForm: "browser_fill_form",
+  browserUploadFile: "browser_upload_file",
+  browserHandleDialog: "browser_handle_dialog",
+  browserConsole: "browser_console",
+  browserNetwork: "browser_network",
+  browserSetEnv: "browser_set_env",
+  browserEvaluate: "browser_evaluate",
+  browserPages: "browser_pages",
+  browserSwitchPage: "browser_switch_page",
+  extractComputedStyle: "extract_computed_style",
   // composite
-  verifyUiFlow: "rolepod_verify_ui_flow",
-  auditA11y: "rolepod_audit_a11y",
-  visualDiff: "rolepod_visual_diff",
-  scaffoldE2e: "rolepod_scaffold_e2e",
-  extractUiState: "rolepod_extract_ui_state",
+  verifyUiFlow: "verify_ui_flow",
+  auditA11y: "audit_a11y",
+  visualDiff: "visual_diff",
+  scaffoldE2e: "scaffold_e2e",
+  extractUiState: "extract_ui_state",
   // v0.7 measurement surface
-  measureCwv: "rolepod_measure_cwv",
-  auditPageBudget: "rolepod_audit_page_budget",
-  auditSeo: "rolepod_audit_seo",
+  measureCwv: "measure_cwv",
+  auditPageBudget: "audit_page_budget",
+  auditSeo: "audit_seo",
 } as const;
 
 export type ToolName = (typeof ToolNames)[keyof typeof ToolNames];

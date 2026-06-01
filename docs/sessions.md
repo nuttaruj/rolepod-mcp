@@ -1,14 +1,14 @@
 # Sessions
 
 Every interaction with rolepod-uiproof happens inside a **session** — an
-opaque handle returned by `rolepod_browser_open` that ties together a
+opaque handle returned by `browser_open` that ties together a
 real browser context (web) or mobile driver (iOS / Android) with the
 ref index of its most recent accessibility snapshot.
 
 ## Lifecycle
 
 ```
-rolepod_browser_open   →  session_id
+browser_open   →  session_id
        │
        ├─ browser_snapshot   (assigns refs e1, e2, …)
        │

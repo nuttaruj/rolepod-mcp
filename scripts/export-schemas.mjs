@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Emit dist/schemas/tools.json — JSON-Schema definitions for every
-// rolepod_* tool exposed by the MCP server. Run via `npm run
+// tool exposed by the MCP server. Run via `npm run
 // build:schemas` after `npm run build`.
 
 import { mkdir, writeFile } from "node:fs/promises";
@@ -72,7 +72,7 @@ if (missing.length > 0) {
 
 // Non-empty guard: a converter/zod-version mismatch can produce a schema with
 // no properties for every tool while still passing the parity check above.
-// Every rolepod_* tool takes at least one input, so an empty `properties` is a
+// Every tool takes at least one input, so an empty `properties` is a
 // broken export — fail loudly rather than ship useless schemas.
 const emptyTools = Object.entries(tools)
   .filter(([, schema]) => Object.keys(schema?.properties ?? {}).length === 0)

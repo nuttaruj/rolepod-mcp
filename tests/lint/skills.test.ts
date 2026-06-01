@@ -8,7 +8,7 @@ import { ToolNames } from "../../src/schema/tools.js";
  *
  * Shipped skills MUST:
  * - have YAML frontmatter with a `description` field
- * - call exactly one `rolepod_*` tool that exists in `ToolNames`
+ * - reference exactly one MCP tool that exists in `ToolNames`
  * - NOT contain a "fallback" / "backend resolution" section
  */
 
@@ -36,16 +36,19 @@ describe("skill lint", () => {
         expect(fm).toMatch(/^description:\s+\S/m);
       });
 
-      it("references exactly one rolepod_* tool that exists", () => {
+      it("references exactly one MCP tool that exists", () => {
+        // Tool names are bare (no prefix), so match against the known set
+        // with identifier boundaries to avoid substring false-positives
+        // (e.g. `audit_seo` inside `audit_page_budget`).
         const referenced = new Set(
-          [...raw.matchAll(/`?(rolepod_[a-z0-9_]+)`?/g)].map((m) => m[1]!),
+          [...KNOWN_TOOLS].filter((t) =>
+            new RegExp(`(^|[^a-z0-9_])${t}([^a-z0-9_]|$)`).test(raw),
+          ),
         );
         expect(
           referenced.size,
-          `Skill must reference exactly one rolepod_* tool, found ${referenced.size}: ${[...referenced].join(", ")}`,
+          `Skill must reference exactly one MCP tool, found ${referenced.size}: ${[...referenced].join(", ")}`,
         ).toBe(1);
-        const [only] = referenced;
-        expect(KNOWN_TOOLS.has(only!), `${only} is not in ToolNames`).toBe(true);
       });
 
       it("contains no fallback chain (D-024)", () => {

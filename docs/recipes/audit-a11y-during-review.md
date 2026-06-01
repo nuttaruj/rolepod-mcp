@@ -8,7 +8,7 @@ with the reviewer's AI agent doing the work.
 > /audit-a11y https://staging.app.example.com at wcag-aa,
 > report_format markdown
 
-The skill calls `rolepod_audit_a11y` with:
+The skill calls `audit_a11y` with:
 
 ```json
 {

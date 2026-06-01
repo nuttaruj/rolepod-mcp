@@ -21,9 +21,9 @@ import {
 
 describe("v0.7 — schemas", () => {
   it("ToolNames registers three new measurement composites", () => {
-    expect(ToolNames.measureCwv).toBe("rolepod_measure_cwv");
-    expect(ToolNames.auditPageBudget).toBe("rolepod_audit_page_budget");
-    expect(ToolNames.auditSeo).toBe("rolepod_audit_seo");
+    expect(ToolNames.measureCwv).toBe("measure_cwv");
+    expect(ToolNames.auditPageBudget).toBe("audit_page_budget");
+    expect(ToolNames.auditSeo).toBe("audit_seo");
   });
 
   it("measure_cwv accepts minimal input + applies thresholds defaults", () => {

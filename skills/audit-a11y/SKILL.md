@@ -5,7 +5,7 @@ description: Run an axe-core accessibility audit on a page against WCAG-A / WCAG
 
 # /audit-a11y
 
-Single-backend skill. Calls **`rolepod_audit_a11y`** on the rolepod-uiproof
+Single-backend skill. Calls **`audit_a11y`** on the rolepod-uiproof
 MCP server. No fallback (D-024).
 
 ## When to use
@@ -36,7 +36,7 @@ MCP server. No fallback (D-024).
 
 ## Process
 
-1. Build `rolepod_audit_a11y` input from the user's intent:
+1. Build `audit_a11y` input from the user's intent:
    - `open: { platform: 'web', url: <target> }`
    - `level`, `report_format`.
 2. Call the tool.

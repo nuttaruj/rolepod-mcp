@@ -5,7 +5,7 @@ description: Generate a runnable e2e test file (playwright-test, vitest+playwrig
 
 # /scaffold-e2e
 
-Single-backend skill. Calls **`rolepod_scaffold_e2e`** on the rolepod-uiproof
+Single-backend skill. Calls **`scaffold_e2e`** on the rolepod-uiproof
 MCP server. No fallback (D-024).
 
 ## When to use
@@ -57,7 +57,7 @@ upstream Selenium has no network-capture primitive.
 
 ## Process
 
-1. Build `rolepod_scaffold_e2e` input.
+1. Build `scaffold_e2e` input.
 2. Call the tool.
 3. Print the generated file path and the setup steps. Surface
    `dependencies` as an install command.

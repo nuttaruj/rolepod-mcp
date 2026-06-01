@@ -5,7 +5,7 @@ description: Audit on-page SEO by inspecting the rendered DOM. Checks title, met
 
 # /audit-seo
 
-Single-backend skill. Calls **`rolepod_audit_seo`** on the rolepod-uiproof
+Single-backend skill. Calls **`audit_seo`** on the rolepod-uiproof
 MCP server. No fallback (D-024).
 
 ## When to use
@@ -45,7 +45,7 @@ MCP server. No fallback (D-024).
 
 ## Process
 
-1. Build `rolepod_audit_seo` input from the user's intent (URL, optional
+1. Build `audit_seo` input from the user's intent (URL, optional
    `checks` subset).
 2. Call the tool.
 3. Surface critical / high findings inline; reference the report path

@@ -5,7 +5,7 @@ description: Audit a page's weight against a declared byte budget. Loads the URL
 
 # /audit-page-budget
 
-Single-backend skill. Calls **`rolepod_audit_page_budget`** on the
+Single-backend skill. Calls **`audit_page_budget`** on the
 rolepod-uiproof MCP server. No fallback (D-024).
 
 ## When to use
@@ -58,7 +58,7 @@ rolepod-uiproof MCP server. No fallback (D-024).
 
 ## Process
 
-1. Build `rolepod_audit_page_budget` input from the user's intent (URL,
+1. Build `audit_page_budget` input from the user's intent (URL,
    optional budget overrides, optional third-party allowlist).
 2. Call the tool.
 3. Surface status + violations inline. Reference the HAR path for

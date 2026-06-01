@@ -5,7 +5,7 @@ description: Measure Core Web Vitals (LCP, INP, CLS) on a live page using Perfor
 
 # /measure-cwv
 
-Single-backend skill. Calls **`rolepod_measure_cwv`** on the rolepod-uiproof
+Single-backend skill. Calls **`measure_cwv`** on the rolepod-uiproof
 MCP server. No fallback (D-024).
 
 ## When to use
@@ -49,7 +49,7 @@ MCP server. No fallback (D-024).
 
 ## Process
 
-1. Build `rolepod_measure_cwv` input from the user's intent (URL, optional
+1. Build `measure_cwv` input from the user's intent (URL, optional
    throttle, optional interactions).
 2. Call the tool.
 3. Surface the three metrics + verdict inline. Reference the report path
